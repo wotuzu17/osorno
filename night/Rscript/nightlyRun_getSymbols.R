@@ -1,5 +1,6 @@
 #!/usr/bin/Rscript --vanilla
 # Script downloads data from Quandl and stores it on download directory
+# this script is for downloading the full dataset
 # credentials in file ~/.osornodb.R
 Sys.setenv(TZ="UTC")
 scriptname <- "nightlyRun_getSymbols.R" # for logging
@@ -20,10 +21,6 @@ suppressPackageStartupMessages(library(DBI))
 suppressPackageStartupMessages(library(RMySQL))
 
 option_list <- list(
-  make_option(c("--incremental"), action="store_true", default=FALSE,
-              help="only download missing days [default %default]"),
-  make_option(c("--fulldownload"), action="store_true", default=FALSE,
-              help="download entire dataset [default %default]"),
   make_option(c("--numberofsyms"), type="integer", default=0, 
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
@@ -213,25 +210,14 @@ if (!dir.exists(downloadbasedir)) {
 this.downloaddir <- paste(downloadbasedir, format(start.time, "%Y%m%d_%H%M%S"), sep="/")
 dir.create(this.downloaddir)
 
-# determine which symbols to feed
-if (opt$incremental == TRUE) {
-  # query db for distinct symbols
-  # for each symbol, get last day in db
-  # get remaining data from quandl
-  # feed to db
-} else if (opt$fulldownload == TRUE) {
-  if (opt$numberofsyms > 0) {
-    # download full set of numberofsyms random tickers
-    syms <- sample(xtsxsyms[,1], floor(opt$numberofsyms))
-    robustGetMultipleSymbols(syms, downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
-  } else {
-    # donwload entire list of symbols (~8622) in xtsxsyms
-    # create dir for this download
-    robustGetMultipleSymbols(xtsxsyms[,1], downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
-  }
+if (opt$numberofsyms > 0) {
+  # download full set of numberofsyms random tickers
+  syms <- sample(xtsxsyms[,1], floor(opt$numberofsyms))
+  robustGetMultipleSymbols(syms, downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
 } else {
-  cat("ERROR: Select either parameter --incremental or --fulldownload\n")
-  print_help(OptionParser(option_list=option_list))
+  # donwload entire list of symbols (~8622) in xtsxsyms
+  # create dir for this download
+  robustGetMultipleSymbols(xtsxsyms[,1], downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
 }
 
 echoStopMark()

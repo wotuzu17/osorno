@@ -52,10 +52,6 @@ for (i in 1:nrow(dates)) { # this loop takes hours
   volsum <-  round(getVolumeSum(con, dates[i,1])[1,1]/1E6)
   cat(paste0("Date ", dates[i,1], " : ", volsum, "\n"))
   dates[i,"vsum"] <- volsum
-}
-
-# feed daily volumes to volumesum table
-for (i in 1:nrow(dates)) {
   sql <- insertDayVolumeSumLine(con, dates[i,1], dates[i,2])
   dbSendQuery(con, sql)
 }
