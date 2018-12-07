@@ -1,5 +1,5 @@
-# file extracts holiday from quotes table 
-# volume zero days
+#!/usr/bin/Rscript --vanilla
+# file extracts holiday from quotes table
 
 Sys.setenv(TZ="UTC")
 scriptname <- "nightlyRun_feedToDB.R" # for logging
