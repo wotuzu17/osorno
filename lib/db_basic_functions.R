@@ -91,7 +91,49 @@ updateQuoteLine <- function(sym, tsline) {
   return(sql)
 }
 
+insertFullSymTS <- function(con, sym, ts) {
+  for(i in 1:nrow(ts)) {
+    dbSendQuery(con, insertQuoteLine(sym, ts[i,]))
+  }
+}
+
 removeSymFromQuoteTblLine <- function(sym) {
   return(sprintf("DELETE FROM `quotes` WHERE `ticker` = '%s'", sym))
 }
 
+removeSymFromQuoteTbl <- function(con, sym) {
+  try(dbres <- dbSendQuery(con, removeSymFromQuoteTblLine(sym)))
+}
+
+getMostRecentDateInQuotes <- function(con) {
+  mostRecentDate <- data.frame()
+  sql <- "SELECT `date` FROM `quotes` ORDER BY `date` DESC LIMIT 1"
+  try(mostRecentDate <- dbGetQuery(con, sql))
+  if (nrow(mostRecentDate) == 1) {
+    return(mostRecentDate[1,1]) # date as character
+  } else {
+    return(NULL)
+  }
+}
+
+getMostRecentTickerDate <- function(con, ticker) {
+  mostRecentDate <- data.frame()
+  sql <- sprintf("SELECT `date` FROM `quotes` WHERE `ticker` = '%s' ORDER BY `date` DESC LIMIT 1", ticker)
+  try(mostRecentDate <- dbGetQuery(con, sql))
+  if (nrow(mostRecentDate) == 1) {
+    return(mostRecentDate[1,1]) # date as character
+  } else {
+    return(NULL)
+  }
+}
+
+getActiveTickers <- function(con, date) {
+  activeTickers <- data.frame()
+  sql <- sprintf("SELECT DISTINCT `ticker` FROM `quotes` WHERE `date` >= '%s'", date)
+  try(activeTickers <- dbGetQuery(con, sql))
+  if (nrow(activeTickers) > 0) {
+    return(activeTickers[,1]) # ticker names as vector
+  } else {
+    return(NULL)
+  }
+}

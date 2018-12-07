@@ -10,6 +10,7 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
+source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 XTSXtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSX_tickers.csv.gz"
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
@@ -35,64 +36,6 @@ echoStopMark <- function() {
   stop.time <- Sys.time()
   cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
   cat ("----------------------------------------------------------------------\n")
-}
-
-# if any of OHLC prices contain zero, disregard line
-eliminateZeroRows <- function(ts) {
-  if (nrow(ts) < 1) {
-    return(ts)
-  } else {
-    ts1 <- cbind(ts, ts[,1] * ts[,2] * ts[,3] * ts[,4])
-    return(ts1[ts1[,ncol(ts1)] >0, c(1:(ncol(ts1)-1))]) 
-  }
-}
-
-# if any of OHLCV prices contain values < 0, disregard line
-eliminateNegRows <- function(ts) {
-  if (nrow(ts) < 1) {
-    return(ts)
-  } else {
-    ts1 <- cbind(ts, ts[,1] < 0 | ts[,2] < 0 | ts[,3] < 0 | ts[,4] < 0 | ts[,5] < 0)
-    return(ts1[ts1[,ncol(ts1)] == 0, c(1:(ncol(ts1)-1))])
-  }
-}
-
-# eliminate crazy price spikes
-smoothPrice <- function(ts) {
-  smoothCol <- function(col) {
-    col1 <- cbind(col, ROC(col[,1]))
-    col2 <- cbind(col1, lag(ROC(col[,1])*(-1), k=-1), lag(col1[,1]))
-    col2[is.na(col2[,3]), 3] <- 2
-    col3 <- cbind(col2, col2[,2] > 1 & col2[,3] > 1)
-    col4 <- cbind(col3, col3[,4] * col3[,5])
-    return(col4[,6] + col4[,1]*(col4[,5] == 0))
-  }
-  ts1<-smoothCol(ts[,1])
-  ts1<-cbind(ts1, smoothCol(ts[,2]), smoothCol(ts[,3]), smoothCol(ts[,4]))
-  colnames(ts1) <- c("Open", "High", "Low", "Close")
-  if (ncol(ts) > 4) {
-    return(cbind(ts1, ts[,c(5:ncol(ts))])[c(2:nrow(ts1)),])
-  } else {
-    return(ts1[c(2:nrow(ts1)),])
-  }
-}
-
-# checkTSsanity. Return false for obviously wrong prices
-checkTSSanity <- function(ts, minrows=200){
-  if (nrow(ts) < minrows) {
-    suitable <- FALSE
-    desc <- paste0("Time series contains only ",nrow(ts)," (less than ", minrows,") rows.")
-  } else if(max(ts[,c(1:4)] > 10000)) {
-    suitable <- FALSE
-    desc <- paste0("Time series max price ", max(ts[,c(1:4)]), " is too high.")
-  } else if (max(ts[,5]) > 1E15) {
-    suitable <- FALSE
-    desc <- paste0("Time series max volume ", max(ts[,5]), " is too high.")
-  } else {
-    suitable <- TRUE
-    desc <- ""
-  }
-  return(list("suitable" = suitable, "desc" = desc))
 }
 
 # tries to download one symbol, returns success and data
