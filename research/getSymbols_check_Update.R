@@ -92,7 +92,7 @@ if (!dir.exists(downloadbasedir)) {
 this.downloaddir <- paste(downloadbasedir, format(start.time, "%Y%m%d_%H%M%S"), sep="/")
 dir.create(this.downloaddir)
 
-syms <- c("SIC", "HIVE", "N", "ROE", "AAP")
+syms <- c("OM", "RRS", "N", "ROE", "AAP")
 from <- as.character(as.Date(start.time) - 7) # seven days in past
 to <- as.character(as.Date(start.time))       # today
 

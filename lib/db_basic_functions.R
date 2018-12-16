@@ -52,6 +52,11 @@ getDistinctDates <- function(con) {
   return(dates)
 }
 
+getDistinctVolsumDates <- function(con) {
+  try(dates <- dbGetQuery(con, "SELECT DISTINCT `date` FROM `volumesum` ORDER BY `date`"))
+  return(dates)
+}
+
 getVolumeSum <- function(con, date) {
   try(vsum <- dbGetQuery(con, sprintf("SELECT SUM(`volume`) FROM `quotes` WHERE `date` = '%s'", date)))
   return(vsum)
@@ -137,3 +142,15 @@ getActiveTickers <- function(con, date) {
     return(NULL)
   }
 }
+
+getTicker <- function(con, ticker, holidays=NULL) {
+  sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` FROM `quotes` WHERE `ticker` = '%s' ORDER BY `date`", ticker)
+  try(ts <- suppressWarnings(dbGetQuery(con, sql)))
+  if (!is.null(holidays)) {
+    ts <- ts[!ts$date %in% holidays,]
+  }
+  return(xts(ts[,-1], order.by=as.Date(ts[,1])))
+}
+
+
+
