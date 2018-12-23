@@ -152,5 +152,14 @@ getTicker <- function(con, ticker, holidays=NULL) {
   return(xts(ts[,-1], order.by=as.Date(ts[,1])))
 }
 
+getTickerUntilDate <- function(con, ticker, to, holidays=NULL) {
+  sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` FROM `quotes` 
+                 WHERE `ticker` = '%s' AND `date` <= '%s' ORDER BY `date`", ticker, to)
+  try(ts <- suppressWarnings(dbGetQuery(con, sql)))
+  if (!is.null(holidays)) {
+    ts <- ts[!ts$date %in% holidays,]
+  }
+  return(xts(ts[,-1], order.by=as.Date(ts[,1])))
+}
 
 
