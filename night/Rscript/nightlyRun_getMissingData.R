@@ -23,7 +23,7 @@ option_list <- list(
   make_option(c("--numberofsyms"), type="integer", default=0, 
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
-  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
 )
 
@@ -96,9 +96,7 @@ dir.create(this.downloaddir)
 for (ticker in tickers) {
   this.mrdate <- getMostRecentTickerDate(con, ticker)
   this.mrdate.plus1 <- as.character(as.Date(this.mrdate) + 1)
-  if (opt$verbose == TRUE) {
-    cat (paste0("Sym ", ticker, " last date :\t", this.mrdate, ". "))
-  }
+  cat (paste0("Sym ", ticker, " last date :\t", this.mrdate, ". "))
   # get data for this ticker 
   from <- as.character(as.Date(this.mrdate)-5)
   to <- as.character(as.Date(start.time))
