@@ -29,6 +29,26 @@ createVolumeSumTable <- function(con) {
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
+# create stockquality table if not exists
+createStockQualityTable <- function(con) {
+  sql <- c("CREATE TABLE IF NOT EXISTS `stockquality` (
+  `ticker` varchar(20) NOT NULL,
+  `first` date NOT NULL,
+  `last` date NOT NULL,
+  `entries` int(11) NULL,
+  `adjustments` int(11) NULL,
+  `zeroROC` int(11) NULL,
+  `tooshort` tinyint(1) NULL,
+  PRIMARY KEY (`ticker`) 
+  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
+  try(dbClearResult(dbSendQuery(con, sql)))
+}
+
+dropStockQualityTable <- function(con) {
+  sql <- c("DROP TABLE `stockquality`")
+  try(dbClearResult(dbSendQuery(con, sql)))
+}
+
 insertDayVolumeSumLine <- function(con, date, volume) {
   sql <- sprintf("INSERT INTO `volumesum` (`date`, `volume`) VALUES ('%s', '%d');",
                  as.character(date), volume)
@@ -60,6 +80,14 @@ getDistinctVolsumDates <- function(con) {
 getVolumeSum <- function(con, date) {
   try(vsum <- dbGetQuery(con, sprintf("SELECT SUM(`volume`) FROM `quotes` WHERE `date` = '%s'", date)))
   return(vsum)
+}
+
+insertStockQualityLine <- function(sym, first, last, entries, adjustments, zeroROC, tooshort) {
+  sql <- sprintf("INSERT INTO `stockquality` 
+                 (`ticker`, `first`, `last`, `entries`, `adjustments`, `zeroROC`, `tooshort`) VALUES 
+                 ('%s', '%s', '%s', '%d', '%d', '%d', '%d');", 
+                 sym, first, last, entries, adjustments, zeroROC, tooshort)
+  return(sql)
 }
 
 # sample tsline:
@@ -152,6 +180,13 @@ getTicker <- function(con, ticker, holidays=NULL) {
   return(xts(ts[,-1], order.by=as.Date(ts[,1])))
 }
 
+# gets full data set with all columns
+# returns data.frame, for stockquality table
+getTickerDF <- function(con, ticker) {
+  sql <- sprintf("SELECT * FROM `quotes` WHERE `ticker` = '%s' ORDER BY `date`", ticker)
+  return(suppressWarnings(dbGetQuery(con, sql)))
+}
+
 getTickerUntilDate <- function(con, ticker, to, holidays=NULL) {
   sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` FROM `quotes` 
                  WHERE `ticker` = '%s' AND `date` <= '%s' ORDER BY `date`", ticker, to)
@@ -160,6 +195,12 @@ getTickerUntilDate <- function(con, ticker, to, holidays=NULL) {
     ts <- ts[!ts$date %in% holidays,]
   }
   return(xts(ts[,-1], order.by=as.Date(ts[,1])))
+}
+
+# returns whole stock quality table
+getStockQualityTable <- function(con) {
+  sql <- ("SELECT * from `stockquality` ORDER BY `ticker`")
+  return(suppressWarnings(dbGetQuery(con, sql)))
 }
 
 
