@@ -34,10 +34,13 @@ createStockQualityTable <- function(con) {
   sql <- c("CREATE TABLE IF NOT EXISTS `stockquality` (
   `ticker` varchar(20) NOT NULL,
   `first` date NOT NULL,
+  `firstdata` date NULL,
   `last` date NOT NULL,
+  `lastdata` date NULL,
   `entries` int(11) NULL,
+  `entriesdata` int(11) NULL,
   `adjustments` int(11) NULL,
-  `zeroROC` int(11) NULL,
+  `zerodata` int(11) NULL,
   `tooshort` tinyint(1) NULL,
   PRIMARY KEY (`ticker`) 
   ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
@@ -82,11 +85,12 @@ getVolumeSum <- function(con, date) {
   return(vsum)
 }
 
-insertStockQualityLine <- function(sym, first, last, entries, adjustments, zeroROC, tooshort) {
+insertStockQualityLine <- function(sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, tooshort) {
   sql <- sprintf("INSERT INTO `stockquality` 
-                 (`ticker`, `first`, `last`, `entries`, `adjustments`, `zeroROC`, `tooshort`) VALUES 
-                 ('%s', '%s', '%s', '%d', '%d', '%d', '%d');", 
-                 sym, first, last, entries, adjustments, zeroROC, tooshort)
+                 (`ticker`, `first`, `firstdata`, `last`, `lastdata`, 
+                  `entries`, `entriesdata`, `adjustments`, `zerodata`, `tooshort`) VALUES 
+                 ('%s', '%s','%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d');", 
+                 sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, tooshort)
   return(sql)
 }
 
@@ -171,8 +175,19 @@ getActiveTickers <- function(con, date) {
   }
 }
 
-getTicker <- function(con, ticker, holidays=NULL) {
-  sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` FROM `quotes` WHERE `ticker` = '%s' ORDER BY `date`", ticker)
+getTicker <- function(con, ticker, holidays=NULL, from=NULL, to=NULL) {
+  fromclause <- ""
+  toclause <- ""
+  if (!is.null(from)) {
+    fromclause <- sprintf("AND `date` >= '%s'", from)
+  }
+  if (!is.null(to)) {
+    toclause <- sprintf("AND `date` <= '%s'", to)
+  }
+  sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` 
+                 FROM `quotes` 
+                 WHERE `ticker` = '%s' %s %s
+                 ORDER BY `date`", ticker, fromclause, toclause)
   try(ts <- suppressWarnings(dbGetQuery(con, sql)))
   if (!is.null(holidays)) {
     ts <- ts[!ts$date %in% holidays,]

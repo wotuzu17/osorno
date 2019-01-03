@@ -68,12 +68,24 @@ for (i in 1:length(syms)) {
   to <- ts[nrow(ts), "date"]
   entries <- nrow(ts)
   adjustments <- nrow(ts[!is.na(ts[,"adj_factor"]), ])
-  zeroROC <- sum(ROC(ts[,"close"]) == 0, na.rm=TRUE)
-  tooshort <- ifelse(entries > 300, 0, 1)
-  sql <- insertStockQualityLine(syms[i], from, to, entries, adjustments, zeroROC, tooshort)
-  dbSendQuery(con, sql)
-  if (i %% 10 == 0) {
-    cat("\n")
+  ts$ROC <- ROC(ts[,"close"])
+  ts$zero <- ts$volume == 0 & (ts$ROC == 0 | is.na(ts$ROC))
+  if (sum(ts$zero) == nrow(ts)) {
+    sql <- insertStockQualityLine(syms[i], from, '1000-01-01', to, '1000-01-01', entries, 0, adjustments, sum(ts$zero), 1)
+    dbSendQuery(con, sql)
+  } else {
+    # filter out leading and trailing zeros
+    ts <- ts[min(which(ts$zero != TRUE)):max(which(ts$zero != TRUE)),]
+    fromd <- ts[1, "date"]
+    tod <- ts[nrow(ts), "date"]
+    entriesd <- nrow(ts)
+    zerod <- sum(ts$zero)
+    tooshort <- ifelse(entriesd > 300, 0, 1)
+    sql <- insertStockQualityLine(syms[i], from, fromd, to, tod, entries, entriesd, adjustments, zerod, tooshort)
+    dbSendQuery(con, sql)
+    if (i %% 10 == 0) {
+      cat("\n")
+    }
   }
 }
 
