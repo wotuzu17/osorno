@@ -70,8 +70,16 @@ for (i in 1:length(syms)) {
   adjustments <- nrow(ts[!is.na(ts[,"adj_factor"]), ])
   ts$ROC <- ROC(ts[,"close"])
   ts$zero <- ts$volume == 0 & (ts$ROC == 0 | is.na(ts$ROC))
+  nr <- ts$ROC[!is.na(ts$ROC) & ts$ROC!=0]
+  lpnr <- sum(nr>0)     # number of positive days
+  lnnr <- sum(nr<0)     # number of negative days
+  nr <- nr[nr<1 & nr>(-1)] # filter outliers
+  spnr <- sum(nr[nr>0]) # sum of positive returns
+  snnr <- sum(nr[nr<0]) # sum of negative returns
   if (sum(ts$zero) == nrow(ts)) {
-    sql <- insertStockQualityLine(syms[i], from, '1000-01-01', to, '1000-01-01', entries, 0, adjustments, sum(ts$zero), 1)
+    sql <- insertStockQualityLine(syms[i], from, '1000-01-01', to, '1000-01-01', 
+                                  entries, 0, adjustments, sum(ts$zero), 
+                                  0, 0, 0, 0, 1)
     dbSendQuery(con, sql)
   } else {
     # filter out leading and trailing zeros
@@ -81,7 +89,9 @@ for (i in 1:length(syms)) {
     entriesd <- nrow(ts)
     zerod <- sum(ts$zero)
     tooshort <- ifelse(entriesd > 300, 0, 1)
-    sql <- insertStockQualityLine(syms[i], from, fromd, to, tod, entries, entriesd, adjustments, zerod, tooshort)
+    sql <- insertStockQualityLine(syms[i], from, fromd, to, tod, 
+                                  entries, entriesd, adjustments, zerod, 
+                                  lpnr, lnnr, spnr, snnr, tooshort)
     dbSendQuery(con, sql)
     if (i %% 10 == 0) {
       cat("\n")

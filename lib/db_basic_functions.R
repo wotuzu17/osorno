@@ -41,6 +41,10 @@ createStockQualityTable <- function(con) {
   `entriesdata` int(11) NULL,
   `adjustments` int(11) NULL,
   `zerodata` int(11) NULL,
+  `lpnr` int(11) NULL,
+  `lnnr` int(11) NULL,
+  `spnr` float DEFAULT NULL,
+  `snnr` float DEFAULT NULL,
   `tooshort` tinyint(1) NULL,
   PRIMARY KEY (`ticker`) 
   ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
@@ -85,12 +89,17 @@ getVolumeSum <- function(con, date) {
   return(vsum)
 }
 
-insertStockQualityLine <- function(sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, tooshort) {
+insertStockQualityLine <- function(sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
+                                   lpnr, lnnr, spnr, snnr, tooshort) {
   sql <- sprintf("INSERT INTO `stockquality` 
                  (`ticker`, `first`, `firstdata`, `last`, `lastdata`, 
-                  `entries`, `entriesdata`, `adjustments`, `zerodata`, `tooshort`) VALUES 
-                 ('%s', '%s','%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d');", 
-                 sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, tooshort)
+                  `entries`, `entriesdata`, `adjustments`, `zerodata`, 
+                  `lpnr`, `lnnr`, `spnr`, `snnr`, `tooshort`) VALUES 
+                 ('%s', '%s','%s', '%s', '%s', 
+                 '%d', '%d', '%d', '%d', 
+                 '%d', '%d', '%f', '%f', '%d');", 
+                 sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
+                 lpnr, lnnr, spnr, snnr, tooshort)
   return(sql)
 }
 
