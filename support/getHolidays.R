@@ -12,6 +12,7 @@ source("/home/voellenk/.osornodb.R")   # secret key file
 source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
+suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(DBI))
 suppressPackageStartupMessages(library(RMySQL))
 
@@ -20,6 +21,23 @@ echoStopMark <- function() {
   stop.time <- Sys.time()
   cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
   cat ("----------------------------------------------------------------------\n")
+}
+
+option_list <- list(
+  make_option(c("--exchange"), action="store", default="",
+              help="download XTSX (ventures) or XTSE data [default %default]")
+)
+
+opt <- parse_args(OptionParser(option_list=option_list))
+
+if(opt$exchange == "XTSX") {
+  osornodb <- osornodb_xtsx
+  cat("processing data from toronto ventures exchange (XTSX).\n")
+} else if (opt$exchange == "XTSE") {
+  osornodb <- osornodb_xtse
+  cat("processing data from toronto stock exchange (XTSE).\n")
+} else {
+  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
 }
 
 # connect to database (keys are in secret file)

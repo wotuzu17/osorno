@@ -23,11 +23,23 @@ option_list <- list(
   make_option(c("--numberofsyms"), type="integer", default=0, 
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
+  make_option(c("--exchange"), action="store", default="",
+              help="download XTSX (ventures) or XTSE data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
+
+if(opt$exchange == "XTSX") {
+  osornodb <- osornodb_xtsx
+  cat("processing data from toronto ventures exchange (XTSX).\n")
+} else if (opt$exchange == "XTSE") {
+  osornodb <- osornodb_xtse
+  cat("processing data from toronto stock exchange (XTSE).\n")
+} else {
+  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+}
 
 # ------------- some functions -------------------------------------------------------
 echoStopMark <- function() {
@@ -37,7 +49,6 @@ echoStopMark <- function() {
 }
 
 # ------------------------------------------------------------------------------------
-
 if (opt$verbose == TRUE) {
   str(opt)
 }
@@ -88,8 +99,10 @@ if (!dir.exists(downloadbasedir)) {
   dir.create(downloadbasedir)
 }
 
-# create download dir for this download
-this.downloaddir <- paste(downloadbasedir, format(start.time, "%Y%m%d_%H%M%S_INC"), sep="/")
+# create download dir for this download 
+this.downloaddir <- paste(downloadbasedir, 
+                          paste0(opt$exchange, "_", format(start.time, "%Y%m%d_%H%M%S_INC")), 
+                          sep="/")
 dir.create(this.downloaddir)
 
 # loop through each ticker and fill missing data into db
@@ -100,7 +113,7 @@ for (ticker in tickers) {
   # get data for this ticker 
   from <- as.character(as.Date(this.mrdate)-5)
   to <- as.character(as.Date(start.time))
-  li <- getPartCleanedQuandlData(ticker, from, to)
+  li <- getPartCleanedQuandlData(ticker, opt$exchange, from, to)
   if (li$success == TRUE) {
     if (nrow(li$data[!is.na(li$data[,6]),]) == 0) {
       # no adjustment in data set. Only fill remaining rows
@@ -113,7 +126,7 @@ for (ticker in tickers) {
       }
     } else {
       # adjustment took place recently. Delete entire sym from quotes table and re-fill everything
-      compli <- getFullCleanedQuandlData(ticker)
+      compli <- getFullCleanedQuandlData(ticker, opt$exchange)
       if (compli$success == TRUE) {
         # delete sym data in table
         removeSymFromQuoteTbl(con, ticker)

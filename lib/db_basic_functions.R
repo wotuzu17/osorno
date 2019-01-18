@@ -51,8 +51,35 @@ createStockQualityTable <- function(con) {
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
+# create stockquality table if not exists
+createStockQualityDayTable <- function(con, day) {
+  sql <- sprintf("CREATE TABLE IF NOT EXISTS `stockquality_%s` (
+  `ticker` varchar(20) NOT NULL,
+  `first` date NOT NULL,
+  `firstdata` date NULL,
+  `last` date NOT NULL,
+  `lastdata` date NULL,
+  `entries` int(11) NULL,
+  `entriesdata` int(11) NULL,
+  `adjustments` int(11) NULL,
+  `zerodata` int(11) NULL,
+  `lpnr` int(11) NULL,
+  `lnnr` int(11) NULL,
+  `spnr` float DEFAULT NULL,
+  `snnr` float DEFAULT NULL,
+  `tooshort` tinyint(1) NULL,
+  PRIMARY KEY (`ticker`) 
+  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;", day)
+  try(dbClearResult(dbSendQuery(con, sql)))
+}
+
 dropStockQualityTable <- function(con) {
   sql <- c("DROP TABLE `stockquality`")
+  try(dbClearResult(dbSendQuery(con, sql)))
+}
+
+dropStockQualityDayTable <- function(con, day) {
+  sql <- sprintf("DROP TABLE `stockquality_%s`", day)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
@@ -89,17 +116,18 @@ getVolumeSum <- function(con, date) {
   return(vsum)
 }
 
-insertStockQualityLine <- function(sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
+insertStockQualityLine <- function(sym, day, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
                                    lpnr, lnnr, spnr, snnr, tooshort) {
-  sql <- sprintf("INSERT INTO `stockquality` 
+  dd <- ifelse(is.null(day), "", sprintf("_%s", day))
+  sql <- sprintf("INSERT INTO `stockquality%s` 
                  (`ticker`, `first`, `firstdata`, `last`, `lastdata`, 
                   `entries`, `entriesdata`, `adjustments`, `zerodata`, 
                   `lpnr`, `lnnr`, `spnr`, `snnr`, `tooshort`) VALUES 
                  ('%s', '%s','%s', '%s', '%s', 
                  '%d', '%d', '%d', '%d', 
-                 '%d', '%d', '%f', '%f', '%d');", 
-                 sym, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
-                 lpnr, lnnr, spnr, snnr, tooshort)
+                 '%d', '%d', '%f', '%f', '%d');",
+                 dd, sym, first, firstd, last, lastd, entries, entriesd, 
+                 adjustments, zerod, lpnr, lnnr, spnr, snnr, tooshort)
   return(sql)
 }
 
@@ -206,8 +234,17 @@ getTicker <- function(con, ticker, holidays=NULL, from=NULL, to=NULL) {
 
 # gets full data set with all columns
 # returns data.frame, for stockquality table
-getTickerDF <- function(con, ticker) {
-  sql <- sprintf("SELECT * FROM `quotes` WHERE `ticker` = '%s' ORDER BY `date`", ticker)
+getTickerDF <- function(con, ticker, from=NULL, to=NULL) {
+  fromclause <- ""
+  toclause <- ""
+  if (!is.null(from)) {
+    fromclause <- sprintf("AND `date` >= '%s'", from)
+  }
+  if (!is.null(to)) {
+    toclause <- sprintf("AND `date` <= '%s'", to)
+  }
+  sql <- sprintf("SELECT * FROM `quotes` WHERE `ticker` = '%s' %s %s
+                 ORDER BY `date`", ticker, fromclause, toclause)
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
 

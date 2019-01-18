@@ -1,7 +1,8 @@
 # functions to get and clean quandl raw data
 
 # get Quandl raw data. Needs to be cleaned 
-robustGetQuandlData <- function(sym, from=NULL, to=NULL) {
+# exchange to be either XTSX or XTSE
+robustGetQuandlData <- function(sym, exchange, from=NULL, to=NULL) {
   maxtry <- 3
   dd <- data.frame()
   while(maxtry > 0) {
@@ -9,9 +10,9 @@ robustGetQuandlData <- function(sym, from=NULL, to=NULL) {
       desc <- ""
       success <- FALSE
       if (is.null(from) & is.null(to)) {
-        dd <- Quandl(paste("XTSX", sym, sep="/"), type="xts", order="asc")
+        dd <- Quandl(paste(exchange, sym, sep="/"), type="xts", order="asc")
       } else {
-        dd <- Quandl(paste("XTSX", sym, sep="/"), type="xts", order="asc", start_date=from, end_date=to)
+        dd <- Quandl(paste(exchange, sym, sep="/"), type="xts", order="asc", start_date=from, end_date=to)
       }
     }, warning = function(w) {
       desc <- paste0("WARNING @ download of sym ", sym,": ", w$message, "\n")
@@ -89,10 +90,10 @@ checkTSSanity <- function(ts, minrows=200){
 }
 
 # for most recent rows of ticker
-getPartCleanedQuandlData <- function(sym, from, to) {
+getPartCleanedQuandlData <- function(sym, exchange, from, to) {
   success <- FALSE
   dd <- data.frame()
-  li <- robustGetQuandlData(sym, from, to)
+  li <- robustGetQuandlData(sym, exchange, from, to)
   if (li$success == TRUE) {
     dd <- li$data
     dd <- eliminateZeroRows(dd)
@@ -115,10 +116,10 @@ getPartCleanedQuandlData <- function(sym, from, to) {
 }
 
 # workflow to receive full data for given sym
-getFullCleanedQuandlData <- function(sym) {
+getFullCleanedQuandlData <- function(sym, exchange) {
   success <- FALSE
   dd <- data.frame()
-  li <- robustGetQuandlData(sym)
+  li <- robustGetQuandlData(sym, exchange)
   if (li$success == TRUE) {
     dd <- li$data
     dd <- eliminateZeroRows(dd)

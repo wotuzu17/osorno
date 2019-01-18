@@ -12,6 +12,7 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 source("/home/voellenk/.osornodb.R")   # secret key file
 source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 XTSXtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSX_tickers.csv.gz"
+XTSEtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSE_tickers.csv.gz"
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
 suppressPackageStartupMessages(library(optparse))
@@ -25,11 +26,25 @@ option_list <- list(
   make_option(c("--numberofsyms"), type="integer", default=0, 
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
+  make_option(c("--exchange"), action="store", default="",
+              help="download XTSX (ventures) or XTSE data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output [default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
+
+if(opt$exchange == "XTSX") {
+  cat("processing data from toronto ventures exchange (XTSX).\n")
+  osornodb <- osornodb_xtsx
+  tickersfile <- XTSXtickersfile 
+} else if (opt$exchange == "XTSE") {
+  cat("processing data from toronto stock exchange (XTSE).\n")
+  osornodb <- osornodb_xtse
+  tickersfile <- XTSEtickersfile 
+} else {
+  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+}
 
 # ------------- some functions -------------------------------
 echoStopMark <- function() {
@@ -48,9 +63,9 @@ robustDownload <- function(sym, from=NULL, to=NULL) {
   cat(paste0(sym,"\t"))
   result <- tryCatch({
     if (is.null(from) & is.null(to)) {
-      dd <- Quandl(paste("XTSX", sym, sep="/"), type="xts", order="asc")
+      dd <- Quandl(paste(opt$exchange, sym, sep="/"), type="xts", order="asc")
     } else {
-      dd <- Quandl(paste("XTSX", sym, sep="/"), type="xts", order="asc", start_date=from, end_date=to)
+      dd <- Quandl(paste(opt$exchange, sym, sep="/"), type="xts", order="asc", start_date=from, end_date=to)
     }
     }, warning = function(w) {
       desc <- paste0("WARNING @ download of sym ", sym,": ", w$message, "\n")
@@ -126,9 +141,9 @@ if (opt$verbose == TRUE) {
 # set Quandl api key
 Quandl.api_key(quandlAPIkey)
 
-# examine XTSXtickersfile
+# examine tickersfile
 result <- tryCatch({ # on success, result contains the xtsxsyms data.frame
-  xtsxsyms <- read.csv(XTSXtickersfile, stringsAsFactors = FALSE)
+  xtsxsyms <- read.csv(tickersfile, stringsAsFactors = FALSE)
 }, warning = function(w) {
   cat(paste0("WARNING: ", w$message, "\n"))
 }, error = function(e) {
@@ -139,7 +154,7 @@ result <- tryCatch({ # on success, result contains the xtsxsyms data.frame
     xtsxsyms <- FALSE
   } else {
     cat(paste("XTSX symbols file from", 
-               file.info(XTSXtickersfile)[,"mtime"], 
+               file.info(tickersfile)[,"mtime"], 
                "contains", nrow(xtsxsyms), "Tickers\n"))
   }
 })
@@ -150,7 +165,7 @@ if (!dir.exists(downloadbasedir)) {
 }
 
 # create download dir for this download
-this.downloaddir <- paste(downloadbasedir, format(start.time, "%Y%m%d_%H%M%S"), sep="/")
+this.downloaddir <- paste(downloadbasedir, paste0(opt$exchange, "_", format(start.time, "%Y%m%d_%H%M%S")), sep="/")
 dir.create(this.downloaddir)
 
 if (opt$numberofsyms > 0) {

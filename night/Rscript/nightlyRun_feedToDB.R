@@ -20,11 +20,23 @@ suppressPackageStartupMessages(library(RMySQL))
 option_list <- list(
   make_option(c("--truncatequotes"), action="store_true", default=FALSE,
               help="empty quotes table before data import [default %default]"),
+  make_option(c("--exchange"), action="store", default="",
+              help="download XTSX (ventures) or XTSE data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output [default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
+
+if(opt$exchange == "XTSX") {
+  cat("processing data from toronto ventures exchange (XTSX).\n")
+  osornodb <- osornodb_xtsx
+} else if (opt$exchange == "XTSE") {
+  cat("processing data from toronto stock exchange (XTSE).\n")
+  osornodb <- osornodb_xtse
+} else {
+  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+}
 
 # ------------- some functions -------------------------------
 echoStopMark <- function() {
@@ -86,7 +98,7 @@ if (opt$verbose == TRUE) {
 }
 
 # use most recent download dir
-ddirs <- dir(downloadbasedir, pattern="^\\d{8}_\\d{6}$")
+ddirs <- dir(downloadbasedir, pattern=sprintf("^%s_\\d{8}_\\d{6}$", opt$exchange))
 if (length(ddirs > 0)) {
   mrddir <- sort(ddirs, decreasing=TRUE)[1]
   this.downloaddir <- paste(downloadbasedir, mrddir, sep="/")
