@@ -24,7 +24,7 @@ option_list <- list(
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
   make_option(c("--exchange"), action="store", default="",
-              help="download XTSX (ventures) or XTSE data [default %default]"),
+              help="download XTSX (ventures) or XTSE or XLON data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
 )
@@ -37,8 +37,11 @@ if(opt$exchange == "XTSX") {
 } else if (opt$exchange == "XTSE") {
   osornodb <- osornodb_xtse
   cat("processing data from toronto stock exchange (XTSE).\n")
+} else if (opt$exchange == "XLON") {
+  osornodb <- osornodb_xlon
+  cat("processing data from London stock exchange (XLON).\n")
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
 
 # ------------- some functions -------------------------------------------------------

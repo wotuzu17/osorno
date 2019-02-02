@@ -29,13 +29,16 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list=option_list))
 
 if(opt$exchange == "XTSX") {
-  cat("processing data from toronto ventures exchange (XTSX).\n")
+  cat("processing data from Toronto Ventures exchange (XTSX).\n")
   osornodb <- osornodb_xtsx
 } else if (opt$exchange == "XTSE") {
-  cat("processing data from toronto stock exchange (XTSE).\n")
+  cat("processing data from Toronto stock exchange (XTSE).\n")
   osornodb <- osornodb_xtse
+} else if (opt$exchange == "XLON") {
+  cat("processing data from London stock exchange (XLON).\n")
+  osornodb <- osornodb_xlon
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
 
 # ------------- some functions -------------------------------

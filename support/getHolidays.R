@@ -25,7 +25,7 @@ echoStopMark <- function() {
 
 option_list <- list(
   make_option(c("--exchange"), action="store", default="",
-              help="download XTSX (ventures) or XTSE data [default %default]")
+              help="download XTSX (ventures) or XTSE or XLON [default %default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
@@ -36,8 +36,11 @@ if(opt$exchange == "XTSX") {
 } else if (opt$exchange == "XTSE") {
   osornodb <- osornodb_xtse
   cat("processing data from toronto stock exchange (XTSE).\n")
+} else if (opt$exchange == "XLON"){
+  osornodb <- osornodb_xlon
+  cat("processing data from London Stock Exchange (XLON).\n")
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
 
 # connect to database (keys are in secret file)

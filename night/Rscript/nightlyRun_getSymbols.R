@@ -11,6 +11,7 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
 source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
+XLONtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XLON_tickers.csv.gz"
 XTSXtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSX_tickers.csv.gz"
 XTSEtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSE_tickers.csv.gz"
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
@@ -27,7 +28,7 @@ option_list <- list(
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
   make_option(c("--exchange"), action="store", default="",
-              help="download XTSX (ventures) or XTSE data [default %default]"),
+              help="download XTSX (ventures) or XTSE or XLON data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output [default]")
 )
@@ -35,15 +36,19 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list=option_list))
 
 if(opt$exchange == "XTSX") {
-  cat("processing data from toronto ventures exchange (XTSX).\n")
+  cat("processing data from Toronto Ventures exchange (XTSX).\n")
   osornodb <- osornodb_xtsx
   tickersfile <- XTSXtickersfile 
 } else if (opt$exchange == "XTSE") {
-  cat("processing data from toronto stock exchange (XTSE).\n")
+  cat("processing data from Toronto stock exchange (XTSE).\n")
   osornodb <- osornodb_xtse
   tickersfile <- XTSEtickersfile 
+} else if (opt$exchange == "XLON") {
+  cat("processing data from London stock exchange (XLON).\n")
+  osornodb <- osornodb_xlon
+  tickersfile <- XLONtickersfile 
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
 
 # ------------- some functions -------------------------------

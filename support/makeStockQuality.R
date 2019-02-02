@@ -20,7 +20,7 @@ suppressPackageStartupMessages(library(TTR))
 
 option_list <- list(
   make_option(c("--exchange"), action="store", default="",
-              help="download XTSX (ventures) or XTSE data [default %default]"),
+              help="download XTSX (ventures) or XTSE or XLON [default %default]"),
   make_option(c("--day"), action="store", default="most_recent",
               help="make analyze for given YYYY-MM-DD [default %default]")
 )
@@ -33,8 +33,11 @@ if(opt$exchange == "XTSX") {
 } else if (opt$exchange == "XTSE") {
   osornodb <- osornodb_xtse
   cat("processing data from toronto stock exchange (XTSE).\n")
+} else if (opt$exchange == "XLON"){
+  osornodb <- osornodb_xlon
+  cat("processing data from London Stock Exchange (XLON).\n")
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or --exchange=XTSE.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
 
 # ------------- some functions -------------------------------------------------------
