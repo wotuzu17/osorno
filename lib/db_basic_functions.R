@@ -1,3 +1,32 @@
+# robust connect
+connectToOsornoDb <- function(osornodb) {
+  result <- tryCatch({ # on success, result contains the connection var con
+    con <- dbConnect(MySQL(), 
+                     user=osornodb$user, 
+                     password=osornodb$password, 
+                     dbname=osornodb$db, 
+                     host=osornodb$host)
+  }, warning = function(w) {
+    cat(paste0("WARNING: ", w$message, "\n"))
+  }, error = function(e) {
+    cat(paste0("ERROR: ", e$message, "\n"))
+  }, finally = {
+    if(exists("con")) {
+      cat (paste(Sys.time(), "Connect to db", osornodb$db), "on host", osornodb$host, "\n")
+    } else {
+      cat ("unable to connect to database, stopping now.\n")
+      echoStopMark()
+      stop()
+    }
+  })
+  return(con)
+}
+
+disconnectFromOsornoDb<- function(con, osornodb) {
+  cat (paste(Sys.time(), "Disconnect from db", osornodb$db, "on host", osornodb$host, "\n"))
+  dbres <- dbDisconnect(con)
+}
+
 truncateQuotesTable <- function(con) {
   try(dbClearResult(dbSendQuery(con, "TRUNCATE quotes")))
 }
@@ -39,6 +68,8 @@ createStockQualityTable <- function(con) {
   `lastdata` date NULL,
   `entries` int(11) NULL,
   `entriesdata` int(11) NULL,
+  `entries.52w` int(11) NULL,
+  `entries.30d` int(11) NULL,
   `adjustments` int(11) NULL,
   `zerodata` int(11) NULL,
   `lpnr` int(11) NULL,
@@ -61,6 +92,8 @@ createStockQualityDayTable <- function(con, day) {
   `lastdata` date NULL,
   `entries` int(11) NULL,
   `entriesdata` int(11) NULL,
+  `entries.52w` int(11) NULL,
+  `entries.30d` int(11) NULL,
   `adjustments` int(11) NULL,
   `zerodata` int(11) NULL,
   `lpnr` int(11) NULL,
@@ -116,18 +149,29 @@ getVolumeSum <- function(con, date) {
   return(vsum)
 }
 
-insertStockQualityLine <- function(sym, day, first, firstd, last, lastd, entries, entriesd, adjustments, zerod, 
+getSymlib <- function(con) {
+  try(symlib <- dbGetQuery(con, "SELECT * FROM `symlib`"))
+  return(symlib)
+}
+
+insertStockQualityLine <- function(sym, day, first, firstd, last, lastd, entries, entriesd, 
+                                   entries.52w, entries.30d, adjustments, zerod, 
                                    lpnr, lnnr, spnr, snnr, tooshort) {
   dd <- ifelse(is.null(day), "", sprintf("_%s", day))
   sql <- sprintf("INSERT INTO `stockquality%s` 
                  (`ticker`, `first`, `firstdata`, `last`, `lastdata`, 
-                  `entries`, `entriesdata`, `adjustments`, `zerodata`, 
+                  `entries`, `entriesdata`, `entries.52w`, `entries.30d`, 
+                  `adjustments`, `zerodata`, 
                   `lpnr`, `lnnr`, `spnr`, `snnr`, `tooshort`) VALUES 
-                 ('%s', '%s','%s', '%s', '%s', 
-                 '%d', '%d', '%d', '%d', 
-                 '%d', '%d', '%f', '%f', '%d');",
-                 dd, sym, first, firstd, last, lastd, entries, entriesd, 
-                 adjustments, zerod, lpnr, lnnr, spnr, snnr, tooshort)
+                 ('%s', '%s', '%s', '%s', '%s', 
+                  '%d', '%d', '%d', '%d', 
+                  '%d', '%d', 
+                  '%d', '%d', '%f', '%f', '%d');",
+                 dd, 
+                 sym, first, firstd, last, lastd, 
+                 entries, entriesd, entries.52w, entries.30d,
+                 adjustments, zerod, 
+                 lpnr, lnnr, spnr, snnr, tooshort)
   return(sql)
 }
 
@@ -264,4 +308,38 @@ getStockQualityTable <- function(con) {
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
 
+# ------- fxexchange functions -------------------------------
+createFxExchangeTable <- function(con) {
+  sql <- c("CREATE TABLE IF NOT EXISTS `fxexchange` (
+  `pair` varchar(6) NOT NULL,
+  `date` date NOT NULL,
+  `quote` double,
+  PRIMARY KEY (`pair`, `date`)
+  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
+  try(dbClearResult(dbSendQuery(con, sql)))
+}
 
+insertFxExchangeLine <- function(pair, date, quote) {
+  sql <- sprintf("INSERT INTO `fxexchange` (`pair`, `date`, `quote`) VALUES ('%s', '%s', '%f');",
+                 pair, as.character(date), quote)
+  return(sql)
+}
+
+# the info pairs is given in colname of second column
+insertFxExchangeChunk <- function(con, df) {
+  pair <- colnames(df)[2]
+  for (i in 1:nrow(df)) {
+    dbSendQuery(con, insertFxExchangeLine(pair, df[i,1], df[i,2]))
+  }
+  return(FALSE)
+}
+
+# returns whole stock quality table
+getFxExchangePair <- function(con, pair) {
+  sql <- (sprintf("SELECT `date`, `quote` from `fxexchange` WHERE `pair` = '%s' ORDER BY `date`", pair))
+  return(suppressWarnings(dbGetQuery(con, sql)))
+}
+
+truncateFxExchangeTable <- function(con) {
+  try(dbClearResult(dbSendQuery(con, "TRUNCATE fxexchange")))
+}

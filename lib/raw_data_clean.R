@@ -73,18 +73,26 @@ smoothPrice <- function(ts) {
 
 # checkTSsanity. Return false for obviously wrong prices
 checkTSSanity <- function(ts, minrows=200){
+  suitable <- TRUE
+  desc <- ""
   if (nrow(ts) < minrows) {
-    suitable <- FALSE
-    desc <- paste0("Time series contains only ",nrow(ts)," (less than ", minrows,") rows.")
+    if(nrow(ts) > 0) {
+      if(Sys.Date()-index(last(ts)) < 6) {
+        desc <- paste0("Time series contains only ", nrow(ts), " rows, but last date is current.")
+      } else {
+        suitable <- FALSE
+        desc <- paste0("Time series contains only ", nrow(ts), " rows, and last date is way in past.")
+      }
+    } else {
+      suitable <- FALSE
+      desc <- paste0("Time series contains no rows at all.")
+    }
   } else if(max(ts[,c(1:4)] > 10000)) {
     suitable <- FALSE
     desc <- paste0("Time series max price ", max(ts[,c(1:4)]), " is too high.")
   } else if (max(ts[,5]) > 1E15) {
     suitable <- FALSE
     desc <- paste0("Time series max volume ", max(ts[,5]), " is too high.")
-  } else {
-    suitable <- TRUE
-    desc <- ""
   }
   return(list("suitable" = suitable, "desc" = desc))
 }

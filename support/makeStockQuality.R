@@ -2,7 +2,7 @@
 # script to create and fill stockquality table 
 foo <- Sys.setlocale("LC_ALL", "en_US.UTF-8")
 Sys.setenv(TZ="UTC")
-scriptname <- "makeReport.R" # for logging
+scriptname <- "makeStockQuality.R" # for logging
 osornobasedir <- "/home/voellenk/osorno_workdir"
 
 start.time <- Sys.time()
@@ -82,6 +82,8 @@ if (opt$day == "most_recent") {
   # create stockquality table if not exists
   cat ("Create stockquality table.\n")
   dbres <- createStockQualityTable(con)
+  dminus52w <- as.Date(mrdate) - 365
+  dminus30d <- as.Date(mrdate) - 30
 } else {
   if (!(as.Date(opt$day) >= "2001-01-01")) {
     stop("Invalid day given.\n")
@@ -91,6 +93,8 @@ if (opt$day == "most_recent") {
   dbres <- dropStockQualityDayTable(con, day)
   cat(paste0("Create stockquality_", day, " table.\n"))
   dbres <- createStockQualityDayTable(con, day)
+  dminus52w <- as.Date(opt$day) - 365
+  dminus30d <- as.Date(opt$day) - 30
 }
 
 # get distinct symbols
@@ -98,8 +102,9 @@ syms <- getDistinctSymbolsinQuotes(con)[,1]
 
 for (i in 1:length(syms)) {
   # get ts
-  cat(paste0(syms[i], " "))
+  cat(paste0(i, "_", syms[i], " "))
   ts <- getTickerDF(con, syms[i], NULL, day)
+  ts.xts <- xts(ts[,c("close", "volume")], order.by=as.Date(ts[,"date"]))
   if (nrow(ts) > 1) {
     from <- ts[1, "date"]
     to <- ts[nrow(ts), "date"]
@@ -113,9 +118,12 @@ for (i in 1:length(syms)) {
     nr <- nr[nr<1 & nr>(-1)] # filter outliers
     spnr <- sum(nr[nr>0]) # sum of positive returns
     snnr <- sum(nr[nr<0]) # sum of negative returns
+    # number of rows in last year / last month
+    e.52w <- nrow(ts.xts[paste0(dminus52w, "/")])
+    e.30d <- nrow(ts.xts[paste0(dminus30d, "/")])
     if (sum(ts$zero) == nrow(ts)) {
       sql <- insertStockQualityLine(syms[i], day, from, '1000-01-01', to, '1000-01-01', 
-                                    entries, 0, adjustments, sum(ts$zero), 
+                                    entries, 0, 0, 0, adjustments, sum(ts$zero), 
                                     0, 0, 0, 0, 1)
       dbSendQuery(con, sql)
     } else {
@@ -127,7 +135,7 @@ for (i in 1:length(syms)) {
       zerod <- sum(ts$zero)
       tooshort <- ifelse(entriesd > 300, 0, 1)
       sql <- insertStockQualityLine(syms[i], day, from, fromd, to, tod, 
-                                    entries, entriesd, adjustments, zerod, 
+                                    entries, entriesd, e.52w, e.30d, adjustments, zerod, 
                                     lpnr, lnnr, spnr, snnr, tooshort)
       dbSendQuery(con, sql)
     }
