@@ -73,7 +73,7 @@ for (i in 1:length(majors)) {
       indb <- getFxExchangePair(conlib, sub("/", "", pair))
       chunk <- tsdf[!(tsdf$date %in% indb$date), ]
       if (nrow(chunk) > 0) {
-        cat (paste0(" Insert ", nrow(chunk), " new rows to DB ..."))
+        cat (paste0(" Insert ", nrow(chunk), " new rows to DB... "))
         insertFxExchangeChunk(conlib, chunk)
         cat ("done!\n")
       } else {
