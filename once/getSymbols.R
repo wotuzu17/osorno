@@ -29,6 +29,8 @@ option_list <- list(
               metavar="number"),
   make_option(c("--exchange"), action="store", default="",
               help="download XTSX (ventures) or XTSE or XLON data [default %default]"),
+  make_option(c("--specificsym"), action="store", default="",
+              help="download only specific symbol [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output [default]")
 )
@@ -177,6 +179,8 @@ if (opt$numberofsyms > 0) {
   # download full set of numberofsyms random tickers
   syms <- sample(xtsxsyms[,1], floor(opt$numberofsyms))
   robustGetMultipleSymbols(syms, downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
+} else if (opt$specificsym != "") {
+  robustGetMultipleSymbols(opt$specificsym, downloaddir=this.downloaddir, retry=3, verbose=opt$verbose)
 } else {
   # donwload entire list of symbols (~8622) in xtsxsyms
   # create dir for this download

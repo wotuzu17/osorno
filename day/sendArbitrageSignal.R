@@ -50,10 +50,10 @@ CADGBP <- getFxExchangePair(conlib, "CADGBP")
 
 
 cat("Disconnect from databases... ")
-disconnectFromOsornoDb(conv)
-disconnectFromOsornoDb(cont)
-disconnectFromOsornoDb(conl)
-disconnectFromOsornoDb(conlib)
+disconnectFromOsornoDb(conv, osornodb_xtsx)
+disconnectFromOsornoDb(cont, osornodb_xtse)
+disconnectFromOsornoDb(conl, osornodb_xlon)
+disconnectFromOsornoDb(conlib, osornodb_lib)
 cat("done!\n")
 
 echoStopMark()
