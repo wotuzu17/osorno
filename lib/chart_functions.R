@@ -71,6 +71,9 @@ exchangeRateDf <- function(tsl, tsc, rate) {
   tsm$ratio.L <- tsm$L.low / tsm$T.high / 100
   tsm$ratio.C <- tsm$L.close / tsm$T.close / 100
   tsm <- merge(tsm, rate)
+  tsm$val.H <- 100 * (log(tsm$ratio.H) - log(tsm$quote))
+  tsm$val.L <- 100 * (log(tsm$ratio.L) - log(tsm$quote))
+  tsm$val.C <- 100 * (log(tsm$ratio.C) - log(tsm$quote))
   tsm$date <- as.Date(tsm$date)
   tsm$volnum <- (tsm$L.volume > 0) * 2 + (tsm$T.volume > 0)
   tsm$volcode <- ""
@@ -86,12 +89,52 @@ exchangeRatePlot <- function(exdf, name) {
   centerdate <- first(exdf)$date + (last(exdf)$date - first(exdf)$date)/2
   p <- ggplot(exdf, aes(date, ratio.C)) + 
     geom_point(aes(colour=volcode)) +
-    scale_colour_brewer(palette="Set1") +
+    scale_colour_brewer(palette="Set1", drop=FALSE) +
     geom_linerange(aes(ymin=ratio.L, ymax=ratio.H), colour="darkgray") +
     annotate("text", x=centerdate, y=Inf, label="overvalued @ London", vjust=1, hjust=.5, colour="blue") + 
     annotate("text", x=centerdate, y=-Inf, label="overvalued @ Toronto", vjust=-1, hjust=.5, colour="red") +
     theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + 
     geom_line(aes(date, quote), colour="brown") + 
-    ggtitle(paste0(name, ", CADGBP"))
+    ggtitle(paste0(name, ", CAD/GBP"))
   return(p)
+}
+
+valuationPlot <- function(exdf, name) {
+  centerdate <- first(exdf)$date + (last(exdf)$date - first(exdf)$date)/2
+  maxhi <- max(exdf$val.H)
+  minlo <- min(exdf$val.L)
+  limhi <- max(20, maxhi)
+  limlo <- min(-20, minlo)
+  p <- ggplot(exdf, aes(date, val.C)) + 
+    geom_hline(yintercept=0, colour="tan") +
+    geom_hline(yintercept=20, colour="tan1") +
+    geom_hline(yintercept=-20, colour="tan1") +
+    ylim(limlo, limhi) +
+    geom_point(aes(colour=volcode)) +
+    scale_colour_brewer(palette="Set1", drop=FALSE) +
+    geom_linerange(aes(ymin=val.L, ymax=val.H), colour="darkgray") +
+    annotate("text", x=centerdate, y=Inf, label="overvalued @ London", vjust=1, hjust=.5, colour="blue") + 
+    annotate("text", x=centerdate, y=-Inf, label="overvalued @ Toronto", vjust=-1, hjust=.5, colour="red") +
+    theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + 
+    # geom_line(aes(date, quote), colour="brown") + 
+    ggtitle(paste0(name, ", Valuation"))
+  return(p)
+}
+
+# function for makeArbitrageReport.R
+daystatisticrow <- function(sym.l, sym.c, exratedf, vol) {
+  retvar <- cbind("L.sym" = sym.l,
+                  "C.sym" = sym.c,
+                  exratedf,
+                  "L.avvol" = vol[[1]]$avvol,
+                  "C.avvol" = vol[[2]]$avvol)
+  retvar <- cbind(retvar, "volratio"= log(retvar[1, "L.avvol"] + 10) - log(retvar[1, "C.avvol"] + 10))
+  #retvar <- cbind(retvar, "val.C" = log(retvar[1, "ratio.C"]) - log(retvar[1, "quote"]))
+  return(retvar)
+}
+
+echoStopMark <- function() {
+  stop.time <- Sys.time()
+  cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
+  cat ("----------------------------------------------------------------------\n")
 }
