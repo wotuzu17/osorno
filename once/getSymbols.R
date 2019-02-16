@@ -14,6 +14,7 @@ source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 XLONtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XLON_tickers.csv.gz"
 XTSXtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSX_tickers.csv.gz"
 XTSEtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSE_tickers.csv.gz"
+OTCBtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/OTCB_tickers.csv.gz"
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
 suppressPackageStartupMessages(library(optparse))
@@ -49,6 +50,10 @@ if(opt$exchange == "XTSX") {
   cat("processing data from London stock exchange (XLON).\n")
   osornodb <- osornodb_xlon
   tickersfile <- XLONtickersfile 
+} else if (opt$exchange == "OTCB") {
+  cat("processing data from OTCB stock exchange (OTCB).\n")
+  osornodb <- osornodb_otcb
+  tickersfile <- OTCBtickersfile 
 } else {
   stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
 }
