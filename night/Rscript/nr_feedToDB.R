@@ -115,18 +115,22 @@ if (length(ddirs > 0)) {
   for (i in 1:length(symfiles)) {
     this.symfile <- symfiles[i]
     this.sym <- sub(".Rdata$", "", sub("^\\d+_", "", symfiles[i]))
-    ts <- data.frame()
-    load(paste(this.downloaddir, this.symfile, sep="/")) # this loads a ts data.frame into environment
-    if (nrow(ts) > 0) {
-      # feed to db
-      if (opt$verbose == TRUE) {
-        cat(paste0("feed ", this.sym, " to quotes table.\n"))
-      }
-      for(j in 1:nrow(ts)) {
-        dbSendQuery(con, insertQuoteLine(this.sym, ts[j,]))
+    if (is.null(getMostRecentTickerDate(con, this.sym))) {
+      ts <- data.frame()
+      load(paste(this.downloaddir, this.symfile, sep="/")) # this loads a ts data.frame into environment
+      if (nrow(ts) > 0) {
+        # feed to db
+        if (opt$verbose == TRUE) {
+          cat(paste0("feed ", this.sym, " to quotes table.\n"))
+        }
+        for(j in 1:nrow(ts)) {
+          dbSendQuery(con, insertQuoteLine(this.sym, ts[j,]))
+        }
+      } else {
+        cat(paste0("ERROR: file ", this.sym, " doesn't contain time series xts.\n"))
       }
     } else {
-      cat(paste0("ERROR: file ", this.sym, " doesn't contain time series xts.\n"))
+      cat(paste0("Symbol ", this.sym, "is already in quotes table.\n"))
     }
   }
 } else {
