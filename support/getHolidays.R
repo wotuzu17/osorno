@@ -2,7 +2,7 @@
 # file extracts holiday from quotes table
 
 Sys.setenv(TZ="UTC")
-scriptname <- "nightlyRun_feedToDB.R" # for logging
+scriptname <- "getHolidays.R" # for logging
 
 start.time <- Sys.time()
 cat (paste(start.time, scriptname, "started-------------------\n"))
@@ -25,7 +25,7 @@ echoStopMark <- function() {
 
 option_list <- list(
   make_option(c("--exchange"), action="store", default="",
-              help="download XTSX (ventures) or XTSE or XLON [default %default]")
+              help="calculate holidays for XTSX or XTSE or XLON or OTCB [default %default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
@@ -39,8 +39,11 @@ if(opt$exchange == "XTSX") {
 } else if (opt$exchange == "XLON"){
   osornodb <- osornodb_xlon
   cat("processing data from London Stock Exchange (XLON).\n")
+} else if (opt$exchange == "OTCB"){
+  osornodb <- osornodb_otcb
+  cat("processing data from OTC Bulletin Board (OTCB).\n")
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON or OTCB.\n")
 }
 
 # connect to database (keys are in secret file)

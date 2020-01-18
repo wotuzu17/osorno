@@ -229,6 +229,23 @@ univdaystatisticrow <- function(sym.a, sym.b, exratedf, vol) {
   return(retvar)
 }
 
+# how far are the misprices away from par
+# and how (ill-)liquid is the ticker
+variationStatistic <- function(exdf) {
+  # only consider trading activity last 3 months maximum
+  days <- min(90, nrow(exdf))
+  exdf$SMA10 <- SMA(exdf$A.close)
+  exdf$DSMA10 <- ROC(exdf$SMA10)
+  exdf <- tail(exdf, days)
+  variation <- sqrt(sum((exdf$val.C ^ 2))/nrow(exdf))
+  A.zerovol <- sum(exdf$A.volume == 0)/nrow(exdf)
+  B.zerovol <- sum(exdf$B.volume == 0)/nrow(exdf)
+  return(data.frame("variation" = variation, 
+                    "A.zerovol" = A.zerovol, 
+                    "B.zerovol" = B.zerovol,
+                    "DSMA10" = last(exdf$DSMA10)))
+}
+
 echoStopMark <- function() {
   stop.time <- Sys.time()
   cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))

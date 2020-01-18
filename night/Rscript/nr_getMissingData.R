@@ -40,8 +40,11 @@ if(opt$exchange == "XTSX") {
 } else if (opt$exchange == "XLON") {
   osornodb <- osornodb_xlon
   cat("processing data from London stock exchange (XLON).\n")
+} else if (opt$exchange == "OTCB") {
+  osornodb <- osornodb_otcb
+  cat("processing data from OTCB.\n")
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE, XLON or OTCB.\n")
 }
 
 # ------------- some functions -------------------------------------------------------
