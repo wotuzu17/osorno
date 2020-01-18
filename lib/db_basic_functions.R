@@ -27,13 +27,20 @@ disconnectFromOsornoDb<- function(con, osornodb) {
   dbres <- dbDisconnect(con)
 }
 
-truncateQuotesTable <- function(con) {
-  try(dbClearResult(dbSendQuery(con, "TRUNCATE quotes")))
+truncateQuotesTable <- function(con, sfx="") {
+  if (sfx!=""){
+    sfx <- paste0("_",sfx)
+  }
+  sql <- sprintf("TRUNCATE quotes%s", sfx)
+  try(dbClearResult(dbSendQuery(con, sql)))
 }
 
 # create quotes table if not exists
-createQuotesTable <- function(con) {
-  sql <- c("CREATE TABLE IF NOT EXISTS `quotes` (
+createQuotesTable <- function(con, sfx="") {
+  if (sfx!=""){
+    sfx <- paste0("_",sfx)
+  }
+  sql <- sprintf("CREATE TABLE IF NOT EXISTS `quotes%s` (
   `ticker` varchar(20) NOT NULL,
   `date` date NOT NULL,
   `open` decimal(10,4),
@@ -44,7 +51,7 @@ createQuotesTable <- function(con) {
   `adj_factor` float DEFAULT NULL,
   `adj_type` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`ticker`, `date`)
-  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
+  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;", sfx)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
@@ -178,16 +185,17 @@ insertStockQualityLine <- function(sym, day, first, firstd, last, lastd, entries
 # sample tsline:
 #Date Open High  Low Close Volume Adjustment Factor Adjustment Type
 #2005-08-04 0.19 0.19 0.16  0.19  21000                NA              NA
-insertQuoteLine <- function(sym, tsline) {
+insertQuoteLine <- function(sym, tsline, adjust=TRUE) {
+  sfx <- ifelse(adjust, "", "_UADJ")
   if (is.na(tsline[1,7])) {
-    sql <- sprintf("INSERT INTO `quotes` (`ticker`, `date`, `open`, `high`, `low`, `close`, `volume`) 
+    sql <- sprintf("INSERT INTO `quotes%s` (`ticker`, `date`, `open`, `high`, `low`, `close`, `volume`) 
           VALUES ('%s', '%s', '%f', '%f', '%f', '%f', '%f');",
-                   sym, as.character(index(tsline[1,])),
+                   sfx, sym, as.character(index(tsline[1,])),
                    tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5])
   } else {
-    sql <- sprintf("INSERT INTO `quotes` (`ticker`, `date`, `open`, `high`, `low`, `close`, `volume`, `adj_factor`, `adj_type`) 
+    sql <- sprintf("INSERT INTO `quotes%s` (`ticker`, `date`, `open`, `high`, `low`, `close`, `volume`, `adj_factor`, `adj_type`) 
           VALUES ('%s', '%s', '%f', '%f', '%f', '%f', '%f', '%f', '%s');",
-                   sym, as.character(index(tsline[1,])),
+                   sfx, sym, as.character(index(tsline[1,])),
                    tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5], 
                    tsline[1, 6], tsline[1, 7])
   }
@@ -195,23 +203,24 @@ insertQuoteLine <- function(sym, tsline) {
 }
 
 # update line
-updateQuoteLine <- function(sym, tsline) {
+updateQuoteLine <- function(sym, tsline, adjust=TRUE) {
+  sfx <- ifelse(adjust, "", "_UADJ")
   if (is.na(tsline[1,7])) {
-    sql <- sprintf("UPDATE `quotes` SET `open` = '%f', `high` = '%f', `low` = '%f', `close` = '%f', `volume` = '%f' 
+    sql <- sprintf("UPDATE `quotes%s` SET `open` = '%f', `high` = '%f', `low` = '%f', `close` = '%f', `volume` = '%f' 
                    WHERE `quotes`.`ticker` = '%s' AND `quotes`.`date` = '%s';",
-                   tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5], sym, as.character(index(tsline[1,])))
+                   sfx, tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5], sym, as.character(index(tsline[1,])))
   } else {
-    sql <- sprintf("UPDATE `quotes` SET `open` = '%f', `high` = '%f', `low` = '%f', `close` = '%f', `volume` = '%f', `adj_factor` = '%f', `adj_type` = '%s'
+    sql <- sprintf("UPDATE `quotes%s` SET `open` = '%f', `high` = '%f', `low` = '%f', `close` = '%f', `volume` = '%f', `adj_factor` = '%f', `adj_type` = '%s'
                    WHERE `quotes`.`ticker` = '%s' AND `quotes`.`date` = '%s';",
-                   tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5], tsline[1, 6], tsline[1, 7],
+                   sfx, tsline[1, 1], tsline[1, 2], tsline[1, 3], tsline[1, 4], tsline[1, 5], tsline[1, 6], tsline[1, 7],
                    sym, as.character(index(tsline[1,])))
   }
   return(sql)
 }
 
-insertFullSymTS <- function(con, sym, ts) {
+insertFullSymTS <- function(con, sym, ts, adjust=TRUE) {
   for(i in 1:nrow(ts)) {
-    dbSendQuery(con, insertQuoteLine(sym, ts[i,]))
+    dbSendQuery(con, insertQuoteLine(sym, ts[i,], adjust))
   }
 }
 
@@ -219,8 +228,16 @@ removeSymFromQuoteTblLine <- function(sym) {
   return(sprintf("DELETE FROM `quotes` WHERE `ticker` = '%s'", sym))
 }
 
+removeSymFromUADJQuoteTblLine <- function(sym) {
+  return(sprintf("DELETE FROM `quotes_UADJ` WHERE `ticker` = '%s'", sym))
+}
+
 removeSymFromQuoteTbl <- function(con, sym) {
   try(dbres <- dbSendQuery(con, removeSymFromQuoteTblLine(sym)))
+}
+
+removeSymFromUADJQuoteTbl <- function(con, sym) {
+  try(dbres <- dbSendQuery(con, removeSymFromUADJQuoteTblLine(sym)))
 }
 
 getMostRecentDateInQuotes <- function(con) {
@@ -256,6 +273,7 @@ getActiveTickers <- function(con, date) {
   }
 }
 
+# legacy function (quotes table with adjusted quotes only)
 getTicker <- function(con, ticker, holidays=NULL, from=NULL, to=NULL) {
   fromclause <- ""
   toclause <- ""
@@ -276,8 +294,31 @@ getTicker <- function(con, ticker, holidays=NULL, from=NULL, to=NULL) {
   return(xts(ts[,-1], order.by=as.Date(ts[,1])))
 }
 
+# new function. choose from adjusted or unadjusted quotes
+getTicker1 <- function(con, ticker, adjust=TRUE, holidays=NULL, from=NULL, to=NULL) {
+  sfx <- ifelse(adjust, "", "_UADJ")
+  fromclause <- ""
+  toclause <- ""
+  if (!is.null(from)) {
+    fromclause <- sprintf("AND `date` >= '%s'", from)
+  }
+  if (!is.null(to)) {
+    toclause <- sprintf("AND `date` <= '%s'", to)
+  }
+  sql <- sprintf("SELECT `date`,`open`,`high`,`low`,`close`,`volume` 
+                 FROM `quotes%s` 
+                 WHERE `ticker` = '%s' %s %s
+                 ORDER BY `date`", sfx, ticker, fromclause, toclause)
+  try(ts <- suppressWarnings(dbGetQuery(con, sql)))
+  if (!is.null(holidays)) {
+    ts <- ts[!ts$date %in% holidays,]
+  }
+  return(xts(ts[,-1], order.by=as.Date(ts[,1])))
+}
+
 # gets full data set with all columns
 # returns data.frame, for stockquality table
+# legacy function (quotes table with adjusted quotes only)
 getTickerDF <- function(con, ticker, from=NULL, to=NULL) {
   fromclause <- ""
   toclause <- ""
@@ -289,6 +330,22 @@ getTickerDF <- function(con, ticker, from=NULL, to=NULL) {
   }
   sql <- sprintf("SELECT * FROM `quotes` WHERE `ticker` = '%s' %s %s
                  ORDER BY `date`", ticker, fromclause, toclause)
+  return(suppressWarnings(dbGetQuery(con, sql)))
+}
+
+# new function. choose from adjusted or unadjusted quotes
+getTickerDF1 <- function(con, ticker, adjust=TRUE, from=NULL, to=NULL) {
+  sfx <- ifelse(adjust, "", "_UADJ")
+  fromclause <- ""
+  toclause <- ""
+  if (!is.null(from)) {
+    fromclause <- sprintf("AND `date` >= '%s'", from)
+  }
+  if (!is.null(to)) {
+    toclause <- sprintf("AND `date` <= '%s'", to)
+  }
+  sql <- sprintf("SELECT * FROM `quotes%s` WHERE `ticker` = '%s' %s %s
+                 ORDER BY `date`", sfx, ticker, fromclause, toclause)
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
 

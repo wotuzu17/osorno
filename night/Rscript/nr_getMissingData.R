@@ -119,13 +119,13 @@ for (ticker in tickers) {
   # get data for this ticker 
   from <- as.character(as.Date(this.mrdate)-5)
   to <- as.character(as.Date(start.time))
-  li <- getPartCleanedQuandlData(ticker, opt$exchange, from, to)
+  li <- getPartCleanedQuandlData(ticker, opt$exchange, TRUE, from, to) # get adjusted data
   if (li$success == TRUE) {
     if (nrow(li$data[!is.na(li$data[,6]),]) == 0) {
       # no adjustment in data set. Only fill remaining rows
       ts <- li$data[paste0(this.mrdate.plus1, "/")] # subset for missing days
       if (nrow(ts) > 0) {
-        insertFullSymTS(con, ticker, ts)
+        insertFullSymTS(con, ticker, ts, TRUE)
         cat(paste0("Filled missing ", nrow(ts), " rows from ", min(index(ts)), " to ", max(index(ts)), " to quotes table.\n"))
       } else {
         cat(paste0("No new data for ", ticker, ". Last day was ", max(index(li$data)), ".\n"))
@@ -138,7 +138,7 @@ for (ticker in tickers) {
         removeSymFromQuoteTbl(con, ticker)
         cat(paste0("deleted sym ", ticker, " from quotes."))
         # fill newly received cleaned data to table
-        insertFullSymTS(con, ticker, compli$data)
+        insertFullSymTS(con, ticker, compli$data, TRUE)
         cat(paste0("refilled ", nrow(compli$data), " rows from ", min(index(compli$data)), " to ", max(index(compli$data))," to quotes.\n"))
       } else {
         cat(paste0("ERROR: Could not receive valid full data for sym ", ticker))

@@ -1,8 +1,12 @@
 # functions to get and clean quandl raw data
 
 # get Quandl raw data. Needs to be cleaned 
-# exchange to be either XTSX or XTSE
-robustGetQuandlData <- function(sym, exchange, from=NULL, to=NULL) {
+# exchange to be either XTSX, XTSE, XLON or OTCB
+# adjust=TRUE for adjusted data
+robustGetQuandlData <- function(sym, exchange, adjust=TRUE, from=NULL, to=NULL) {
+  if (adjust!=TRUE){
+    sym <- paste0(sym, "_UADJ")
+  }
   maxtry <- 3
   dd <- data.frame()
   while(maxtry > 0) {
@@ -78,30 +82,30 @@ checkTSSanity <- function(ts, minrows=200){
   if (nrow(ts) < minrows) {
     if(nrow(ts) > 0) {
       if(Sys.Date()-index(last(ts)) < 6) {
-        desc <- paste0("Time series contains only ", nrow(ts), " rows, but last date is current.")
+        desc <- paste0("Time series contains only ", nrow(ts), " rows, but last date is current. ")
       } else {
         suitable <- FALSE
-        desc <- paste0("Time series contains only ", nrow(ts), " rows, and last date is way in past.")
+        desc <- paste0("Time series contains only ", nrow(ts), " rows, and last date is way in past. ")
       }
     } else {
       suitable <- FALSE
-      desc <- paste0("Time series contains no rows at all.")
+      desc <- paste0("Time series contains no rows at all. ")
     }
   } else if(max(ts[,c(1:4)] > 10000)) {
     suitable <- FALSE
-    desc <- paste0("Time series max price ", max(ts[,c(1:4)]), " is too high.")
+    desc <- paste0("Time series max price ", max(ts[,c(1:4)]), " is too high. ")
   } else if (max(ts[,5]) > 1E15) {
     suitable <- FALSE
-    desc <- paste0("Time series max volume ", max(ts[,5]), " is too high.")
+    desc <- paste0("Time series max volume ", max(ts[,5]), " is too high. ")
   }
   return(list("suitable" = suitable, "desc" = desc))
 }
 
 # for most recent rows of ticker
-getPartCleanedQuandlData <- function(sym, exchange, from, to) {
+getPartCleanedQuandlData <- function(sym, exchange, adjust, from, to) {
   success <- FALSE
   dd <- data.frame()
-  li <- robustGetQuandlData(sym, exchange, from, to)
+  li <- robustGetQuandlData(sym, exchange, adjust, from, to)
   if (li$success == TRUE) {
     dd <- li$data
     dd <- eliminateZeroRows(dd)
@@ -112,22 +116,22 @@ getPartCleanedQuandlData <- function(sym, exchange, from, to) {
         desc <- ""
         success <- TRUE
       } else {
-        desc <- paste0("Not suitable: ", suitl$desc)
+        desc <- paste0("Not suitable: ", suitl$desc, ". ")
       }
     } else {
-      desc <- "No data after FILTER"
+      desc <- "No data after FILTER. "
     }
   } else {
-    desc <- "NO DATA @ download"
+    desc <- "NO DATA @ download. "
   }
   return(list("success" = success, "desc" = desc, "data" =dd))
 }
 
-# workflow to receive full data for given sym
+# workflow to receive full data for given sym (only for adjusted data)
 getFullCleanedQuandlData <- function(sym, exchange) {
   success <- FALSE
   dd <- data.frame()
-  li <- robustGetQuandlData(sym, exchange)
+  li <- robustGetQuandlData(sym, exchange, TRUE)
   if (li$success == TRUE) {
     dd <- li$data
     dd <- eliminateZeroRows(dd)
@@ -142,10 +146,37 @@ getFullCleanedQuandlData <- function(sym, exchange) {
         desc <- paste0("Not suitable: ", suitl$desc)
       }
     } else {
-      desc <- "No data after FILTER"
+      desc <- "No data after FILTER "
     }
   } else {
-    desc <- "NO DATA @ download"
+    desc <- "NO DATA @ download "
+  }
+  return(list("success" = success, "desc" = desc, "data" =dd))
+}
+
+# workflow to receive full data for given sym (only for non adjusted data)
+getFullUADJQuandlData <- function(sym, exchange) {
+  success <- FALSE
+  dd <- data.frame()
+  li <- robustGetQuandlData(sym, exchange, FALSE)
+  if (li$success == TRUE) {
+    dd <- li$data
+    dd <- eliminateZeroRows(dd)
+    dd <- eliminateNegRows(dd)
+    if (nrow(dd) > 1) {
+      #dd <- smoothPrice(dd)
+      suitl <- checkTSSanity(dd)
+      if (suitl$suitable == TRUE) {
+        desc <- ""
+        success <- TRUE
+      } else {
+        desc <- paste0("Not suitable: ", suitl$desc)
+      }
+    } else {
+      desc <- "No data after FILTER "
+    }
+  } else {
+    desc <- "NO DATA @ download "
   }
   return(list("success" = success, "desc" = desc, "data" =dd))
 }

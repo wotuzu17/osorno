@@ -21,8 +21,8 @@ suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(Quandl))
 suppressPackageStartupMessages(library(xts))
 suppressPackageStartupMessages(library(TTR))
-suppressPackageStartupMessages(library(DBI))
-suppressPackageStartupMessages(library(RMySQL))
+#suppressPackageStartupMessages(library(DBI))
+#suppressPackageStartupMessages(library(RMySQL))
 
 option_list <- list(
   make_option(c("--numberofsyms"), type="integer", default=0, 
@@ -55,7 +55,7 @@ if(opt$exchange == "XTSX") {
   osornodb <- osornodb_otcb
   tickersfile <- OTCBtickersfile 
 } else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
+  stop("exchange is not defined. Choose either --exchange=XTSX, XTSE, XLON or OTCB.\n")
 }
 
 # ------------- some functions -------------------------------

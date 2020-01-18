@@ -2,7 +2,7 @@
 # Script downloads data from Quandl and stores it on download directory
 # credentials in file ~/.osornodb.R
 Sys.setenv(TZ="UTC")
-scriptname <- "nightlyRun_feedToDB.R" # for logging
+scriptname <- "s2_feedToDB.R" # for logging
 
 start.time <- Sys.time()
 cat (paste(start.time, scriptname, "started-------------------\n"))
