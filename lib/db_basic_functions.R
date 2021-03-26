@@ -65,6 +65,10 @@ createVolumeSumTable <- function(con) {
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
+truncateVolumeSumTable <- function(con) {
+  try(dbClearResult(dbSendQuery(con, "TRUNCATE `volumesum`")))
+}
+
 # create stockquality table if not exists
 createStockQualityTable <- function(con) {
   sql <- c("CREATE TABLE IF NOT EXISTS `stockquality` (
