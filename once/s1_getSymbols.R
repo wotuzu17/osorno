@@ -3,13 +3,14 @@
 # this script is for downloading the full dataset
 # credentials in file ~/.osornodb.R
 Sys.setenv(TZ="UTC")
-scriptname <- "nightlyRun_getSymbols.R" # for logging
+scriptname <- "s1_getSymbols.R" # for logging
 
 start.time <- Sys.time()
 cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
+source("/home/voellenk/osorno_workdir/osorno/lib/osorno_lib.R")
 source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 XLONtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XLON_tickers.csv.gz"
 XTSXtickersfile <- "/home/voellenk/osorno_workdir/data/symbols/XTSX_tickers.csv.gz"
@@ -28,11 +29,11 @@ option_list <- list(
   make_option(c("--numberofsyms"), type="integer", default=0, 
               help="For testing. Only download numberofsyms symbols [default %default]",
               metavar="number"),
-  make_option(c("--exchange"), action="store", default="",
+  make_option(c("--exchange"), action="store", default="XTSX",
               help="download XTSX (ventures) or XTSE or XLON data [default %default]"),
   make_option(c("--specificsym"), action="store", default="",
               help="download only specific symbol [default %default]"),
-  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
 )
 
@@ -58,13 +59,6 @@ if(opt$exchange == "XTSX") {
   stop("exchange is not defined. Choose either --exchange=XTSX, XTSE, XLON or OTCB.\n")
 }
 
-# ------------- some functions -------------------------------
-echoStopMark <- function() {
-  stop.time <- Sys.time()
-  cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
-  cat ("----------------------------------------------------------------------\n")
-}
-
 # tries to download one symbol, returns success and data
 robustDownload <- function(sym, from=NULL, to=NULL) {
   success <- TRUE   # download successful?
@@ -72,7 +66,7 @@ robustDownload <- function(sym, from=NULL, to=NULL) {
   rows <- 0
   dd <- data.frame()
   desc <-""
-  cat(paste0(sym,"\t"))
+  cat(paste0(sym,"\n"))
   result <- tryCatch({
     if (is.null(from) & is.null(to)) {
       dd <- Quandl(paste(opt$exchange, sym, sep="/"), type="xts", order="asc")

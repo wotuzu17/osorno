@@ -9,6 +9,7 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
+source("/home/voellenk/osorno_workdir/osorno/lib/osorno_lib.R")
 source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
@@ -20,7 +21,7 @@ suppressPackageStartupMessages(library(RMySQL))
 option_list <- list(
   make_option(c("--truncatevolumesum"), action="store_true", default=FALSE,
               help="empty volumesum table before new calculation [default %default]"),
-  make_option(c("--exchange"), action="store", default="",
+  make_option(c("--exchange"), action="store", default="XTSX",
               help="download XTSX (ventures) or XTSE or XLON data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
@@ -42,13 +43,6 @@ if(opt$exchange == "XTSX") {
   osornodb <- osornodb_otcb
 } else {
   stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
-}
-
-# ------------- some functions -------------------------------
-echoStopMark <- function() {
-  stop.time <- Sys.time()
-  cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
-  cat ("----------------------------------------------------------------------\n")
 }
 
 # connect to database (keys are in secret file)
@@ -96,7 +90,6 @@ for (missingdate in missingdates) {
   sql <- insertDayVolumeSumLine(con, missingdate, volsum)
   dbSendQuery(con, sql)
 }
-
 
 # diconnect from DB
 if (opt$verbose) {

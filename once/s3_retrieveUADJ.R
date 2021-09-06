@@ -9,6 +9,7 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
+source("/home/voellenk/osorno_workdir/osorno/lib/osorno_lib.R")
 source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
 
@@ -21,17 +22,13 @@ suppressPackageStartupMessages(library(RMySQL))
 option_list <- list(
   make_option(c("--truncatequotes"), action="store_true", default=FALSE,
               help="empty quotes_UADJ table before data import [default %default]"),
-  make_option(c("--exchange"), action="store", default="",
+  make_option(c("--exchange"), action="store", default="XTSX",
               help="download XTSX (ventures) or XTSE data [default %default]"),
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
               help="Print extra output [default]")
 )
 
 opt <- parse_args(OptionParser(option_list=option_list))
-
-# for debug
-#opt$exchange <- "XTSX"
-#opt$verbose <- TRUE
 
 if(opt$exchange == "XTSX") {
   cat("processing data from Toronto Ventures exchange (XTSX).\n")
@@ -48,14 +45,6 @@ if(opt$exchange == "XTSX") {
 } else {
   stop("exchange is not defined. Choose either --exchange=XTSX, XTSE, XLON or OTCB.\n")
 }
-
-# ------------- some functions -------------------------------
-echoStopMark <- function() {
-  stop.time <- Sys.time()
-  cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
-  cat ("----------------------------------------------------------------------\n")
-}
-# ------------------------------------------------------------
 
 if (opt$verbose == TRUE) {
   str(opt)
