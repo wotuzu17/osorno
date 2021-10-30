@@ -10,7 +10,9 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
 source("/home/voellenk/osorno_workdir/osorno/lib/osorno_lib.R")
-source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_01_connect_disconnect.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_02_quotes_table.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_03_volumesum_table.R")
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 
 suppressPackageStartupMessages(library(optparse))
@@ -29,21 +31,8 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list=option_list))
 
-if(opt$exchange == "XTSX") {
-  cat("processing data from Toronto Ventures exchange (XTSX).\n")
-  osornodb <- osornodb_xtsx
-} else if (opt$exchange == "XTSE") {
-  cat("processing data from Toronto stock exchange (XTSE).\n")
-  osornodb <- osornodb_xtse
-} else if (opt$exchange == "XLON") {
-  cat("processing data from London stock exchange (XLON).\n")
-  osornodb <- osornodb_xlon
-} else if (opt$exchange == "OTCB") {
-  cat("processing data from OTCB stock exchange (OTCB).\n")
-  osornodb <- osornodb_otcb
-} else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
-}
+# determine osornodb and tickers file from exchange parameter
+source("/home/voellenk/osorno_workdir/osorno/lib/select_exchange.R")
 
 # connect to database (keys are in secret file)
 result <- tryCatch({ # on success, result contains the connection var con

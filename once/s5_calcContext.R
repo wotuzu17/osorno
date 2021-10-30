@@ -11,8 +11,10 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
 source("/home/voellenk/osorno_workdir/osorno/lib/osorno_lib.R")
-source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
-downloadbasedir <- "/home/voellenk/osorno_workdir/download"
+source("/home/voellenk/osorno_workdir/osorno/lib/db_01_connect_disconnect.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_02_quotes_table.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_03_volumesum_table.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_06_context_table.R")
 
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(xts))
@@ -32,21 +34,12 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list=option_list))
 first.day <- as.Date("2006-01-01")
 
-if(opt$exchange == "XTSX") {
-  cat("processing data from Toronto Ventures exchange (XTSX).\n")
-  osornodb <- osornodb_xtsx
-} else if (opt$exchange == "XTSE") {
-  cat("processing data from Toronto stock exchange (XTSE).\n")
-  osornodb <- osornodb_xtse
-} else if (opt$exchange == "XLON") {
-  cat("processing data from London stock exchange (XLON).\n")
-  osornodb <- osornodb_xlon
-} else if (opt$exchange == "OTCB") {
-  cat("processing data from OTCB stock exchange (OTCB).\n")
-  osornodb <- osornodb_otcb
-} else {
-  stop("exchange is not defined. Choose either --exchange=XTSX or XTSE or XLON.\n")
-}
+#for debug
+#opt <- list()
+#opt$exchange <- "XTSX"
+
+# determine osornodb and tickers file from exchange parameter
+source("/home/voellenk/osorno_workdir/osorno/lib/select_exchange.R")
 
 # for debug
 #osornodb <- osornodb_xtsx
@@ -56,16 +49,14 @@ if(opt$exchange == "XTSX") {
 # connect to database (keys are in secret file)
 con <- connectToOsornoDb(osornodb)
 
-# create volumesum table if not exists
+# create context table if not exists
 if (opt$verbose) {
   cat("creating context table if not exists.\n")
 }
 createContextTable(con, context)
 
 if (opt$truncatecontext == TRUE) {
-  if (opt$verbose) {
-    cat("truncating context table.\n")
-  }
+  cat("truncating context table.\n")
   truncateContextTable(con)
 }
 
@@ -74,8 +65,8 @@ dt1 <- as.Date(dates[,1])
 dt <- dt1[dt1 > first.day]
 holidays <- getLowVolumeDays(con)
 
-# for (i in 1:length(dt)) {
-for (i in 1:3) {
+for (i in 1:length(dt)) {
+#for (i in 1:3) {
   this.tk <- getTickersOnDate(con, dt[i])
   cat(paste0(dt[i], ": ", length(this.tk), " tickers.\n"))
   dminus52w <- dt[i] - 365
@@ -85,7 +76,7 @@ for (i in 1:3) {
     this <- sapply(context, names) # list of all elements in context list
     this$ticker <- tk
     this$date <- format(dt[i], "%Y-%m-%d")
-    if ((j-1) %% 100 == 0) { # print every one-hundreth ticker 
+    if ((j-1) %% floor(length(this.tk)/10) == 0) { # print every 400th item to reach 10 printouts 
       cat(paste0(j, ":", tk, " "))
     }
     usable <- TRUE # assume the symbol is usable, may be overridden later on
@@ -115,22 +106,27 @@ for (i in 1:3) {
       this$zerodata <- sum(ts$zero)
       if (sum(ts$zero) == nrow(ts)) { # only rows with no action
         this$usable <- 0
+        this$firstdata <- "1900-01-01"
+        this$lastdata <- "1900-01-01"
+      } else {
+        nr <- ts$ROC[!is.na(ts$ROC) & ts$ROC!=0]
+        this$lpnr <- sum(nr>0)     # number of positive days
+        this$lnnr <- sum(nr<0)     # number of negative days
+        this$entries52w <- nrow(ts.xts[paste0(dminus52w, "/")])
+        this$entries30d <- nrow(ts.xts[paste0(dminus30d, "/")])
+        tsnozero <- ts[ts$zero == FALSE, ]
+        this$firstdata <- tsnozero[1, "date"]
+        this$lastdata <- tsnozero[nrow(tsnozero), "date"]
+        this$entriesdata <- nrow(ts[ts$date >= this$firstdata & ts$date <= this$lastdata, ])
       }
-      nr <- ts$ROC[!is.na(ts$ROC) & ts$ROC!=0]
-      this$lpnr <- sum(nr>0)     # number of positive days
-      this$lnnr <- sum(nr<0)     # number of negative days
-      this$entries52w <- nrow(ts.xts[paste0(dminus52w, "/")])
-      this$entries30d <- nrow(ts.xts[paste0(dminus30d, "/")])
-      insertContextLine(this)
     } else {
       this$usable <- 0
       this$first <- "1900-01-01"
       this$firstdata <- "1900-01-01"
       this$last <- "1900-01-01"
       this$lastdata <- "1900-01-01"
-      insertContextLine(this)
     }
-    stop()
+    replaceContextLine(this)
   }
   cat("\n\n")
 }
