@@ -126,7 +126,7 @@ for (i in 1:length(dt)) {
       this$last <- "1900-01-01"
       this$lastdata <- "1900-01-01"
     }
-    replaceContextLine(this)
+    replaceContextLine(con, this)
   }
   cat("\n\n")
 }

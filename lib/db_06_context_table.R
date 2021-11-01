@@ -48,26 +48,24 @@ truncateContextTable <- function(con) {
   try(dbClearResult(dbSendQuery(con, "TRUNCATE `context`")))
 }
 
-insertContextLine <- function(row) {
+insertContextLine <- function(con, row) {
   nnull <- !sapply(row, is.null)
   sql <- paste0("INSERT INTO `context`(`", 
                 paste0(names(row)[nnull], collapse = "`,`"), 
                 "`) VALUES ('",
                 paste0(unlist(row[nnull]), collapse="','"),
                 "');")
-#  cat(sql)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
 # same as insert, but replaces row if already exists
-replaceContextLine <- function(row) {
+replaceContextLine <- function(con, row) {
   nnull <- !sapply(row, is.null)
   sql <- paste0("REPLACE INTO `context`(`", 
                 paste0(names(row)[nnull], collapse = "`,`"), 
                 "`) VALUES ('",
                 paste0(unlist(row[nnull]), collapse="','"),
                 "');")
-#  cat(sql)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
