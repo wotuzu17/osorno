@@ -54,6 +54,12 @@ coni <- connectToOsornoDb(osornodb.in)
 cat (paste(Sys.time(), "Connect to outDB", osornodb.out$db, "on host", osornodb.out$host, "\n"))
 cono <- connectToOsornoDb(osornodb.out)
 
+# create context table if not exists
+if (opt$verbose) {
+  cat("creating context table if not exists.\n")
+}
+createContextTable(cono, context)
+
 # get complete dates from quotes table of db.in
 dates <- getDistinctDates(coni)
 dt <- as.Date(dates[,1])
