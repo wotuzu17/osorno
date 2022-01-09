@@ -202,7 +202,7 @@ getTickerDF <- function(con, ticker, from=NULL, to=NULL) {
 }
 
 # new function. choose from adjusted or unadjusted quotes
-getTickerDF1 <- function(con, ticker, adjust=TRUE, from=NULL, to=NULL) {
+getTickerDF1 <- function(con, ticker, adjust=TRUE, holidays=NULL, from=NULL, to=NULL) {
   sfx <- ifelse(adjust, "", "_UADJ")
   fromclause <- ""
   toclause <- ""
@@ -214,7 +214,12 @@ getTickerDF1 <- function(con, ticker, adjust=TRUE, from=NULL, to=NULL) {
   }
   sql <- sprintf("SELECT * FROM `quotes%s` WHERE `ticker` = '%s' %s %s
                  ORDER BY `date`", sfx, ticker, fromclause, toclause)
-  return(suppressWarnings(dbGetQuery(con, sql)))
+  TS <- suppressWarnings(dbGetQuery(con, sql))
+  if (is.null(holidays)) {
+    return(TS)
+  } else {
+    return(TS[!(TS$date %in% holidays), ])
+  }
 }
 
 getTickerUntilDate <- function(con, ticker, to, holidays=NULL) {

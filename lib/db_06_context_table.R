@@ -73,3 +73,8 @@ getContextLine <- function(ticker, date) {
   sql <- sprintf("SELECT * FROM `context` WHERE `ticker`='%s' AND `date`='%s'", ticker, date)
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
+
+getContextTblOnDate <- function(con, date) {
+  sql <- sprintf("SELECT * FROM `context` WHERE `date`='%s'", date)
+  return(suppressWarnings(dbGetQuery(con, sql)))
+}

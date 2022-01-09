@@ -2,7 +2,13 @@
 tsdfplot <- function(df, name, sym, exchange, start=NULL, end=NULL) {
   df <- df[,c("date", "high", "low", "close", "volume")]
   df$date <- as.Date(df$date)
-  df$logvol <- log(df[,"volume"]+10)
+  if (!is.null(start)) {
+    df <- df[df$date >= as.Date(start), ]
+  }
+  if (!is.null(end)) {
+    df <- df[df$date <= as.Date(end), ]
+  }
+  df$logvol <- log(df[,"volume"]+1)
   p <- ggplot(df, aes(date, close)) + 
     geom_line(colour="lightgray") +
     geom_linerange(aes(ymin=low, ymax=high), colour="darkgray") +
@@ -11,9 +17,6 @@ tsdfplot <- function(df, name, sym, exchange, start=NULL, end=NULL) {
     scale_color_distiller(palette="Spectral") +
     theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + 
     ggtitle(paste0(name, " (",sym, ") @ ", exchange)) 
-  if(!is.null(start)) {
-    p <- p + scale_x_date(date_breaks= "2 month", labels=date_format("%b-%y"), limits=c(start, end))
-  }
   return(p)
 }
 
@@ -244,10 +247,4 @@ variationStatistic <- function(exdf) {
                     "A.zerovol" = A.zerovol, 
                     "B.zerovol" = B.zerovol,
                     "DSMA10" = last(exdf$DSMA10)))
-}
-
-echoStopMark <- function() {
-  stop.time <- Sys.time()
-  cat (paste(stop.time, scriptname, "stopped, duration:", round(as.numeric(difftime(stop.time, start.time, units="mins")),1), "mins\n"))
-  cat ("----------------------------------------------------------------------\n")
 }

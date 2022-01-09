@@ -1,53 +1,55 @@
 # create contextCalc table if not exists
-createContextCalcTable <- function(con) {
-  sql <- c("CREATE TABLE IF NOT EXISTS `contextCalc` (
+# can also be used for context2
+createContextCalcTable <- function(con, version="") {
+  sql <- sprintf("CREATE TABLE IF NOT EXISTS `contextCalc%s` (
   `date` date NOT NULL,
   `host` varchar(50) NULL,
   `start` datetime NULL,
   `end` datetime NULL,
   `numberofsyms` int(11) NULL,
   PRIMARY KEY (`date`) 
-  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;")
+  ) ENGINE=MyISAM DEFAULT CHARSET=ascii;", version)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
-dropContextCalcTable <- function(con) {
-  sql <- c("DROP TABLE `contextCalc`")
+dropContextCalcTable <- function(con, version="") {
+  sql <- sprintf("DROP TABLE `contextCalc%s`", version)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
-truncateContextCalcTable <- function(con) {
-  sql <- c("TRUNCATE TABLE `contextCalc`")
+truncateContextCalcTable <- function(con, version="") {
+  sql <- sprintf("TRUNCATE TABLE `contextCalc%s`", version)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
-insertEmptyDateLine <- function(con, date) {
-  sql <- sprintf("INSERT INTO `contextCalc` (`date`) VALUES ('%s');",
-                 as.character(date))
+insertEmptyDateLine <- function(con, date, version="") {
+  sql <- sprintf("INSERT INTO `contextCalc%s` (`date`) VALUES ('%s');",
+                 version, as.character(date))
   return(sql)
 }
 
-getOldestOpenDate <- function(con) {
-  sql <- "SELECT * FROM `contextCalc` WHERE `host` IS NULL ORDER BY `date` LIMIT 1"
+getOldestOpenDate <- function(con, version="") {
+  sql <- sprintf("SELECT * FROM `contextCalc%s` WHERE `host` IS NULL ORDER BY `date` LIMIT 1",
+                 version)
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
 
-setProcessStartMark <- function(con, date, host) {
-  sql <- sprintf("UPDATE `contextCalc` 
+setProcessStartMark <- function(con, date, host, version="") {
+  sql <- sprintf("UPDATE `contextCalc%s` 
                  SET `host` = '%s', `start` = NOW() 
-                 WHERE `contextCalc`.`date` = '%s'", host, date)
+                 WHERE `contextCalc%s`.`date` = '%s'", version, host, version, date)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
-setProcessStopMark <- function(con, date, nsyms) {
-  sql <- sprintf("UPDATE `contextCalc` 
+setProcessStopMark <- function(con, date, nsyms, version="") {
+  sql <- sprintf("UPDATE `contextCalc%s` 
                  SET `end` = NOW(), `numberofsyms` = '%d' 
-                 WHERE `contextCalc`.`date` = '%s'", nsyms, date)
+                 WHERE `contextCalc%s`.`date` = '%s'", version, nsyms, version, date)
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
-verifyProcessMark <- function(con, date, host) {
-  sql <- sprintf("SELECT * FROM `contextCalc` 
-                 WHERE `date` = '%s' AND `host` = '%s'", date, host)
+verifyProcessMark <- function(con, date, host, version="") {
+  sql <- sprintf("SELECT * FROM `contextCalc%s` 
+                 WHERE `date` = '%s' AND `host` = '%s'", version, date, host)
   return(suppressWarnings(dbGetQuery(con, sql)))
 }
