@@ -10,7 +10,8 @@ cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
-source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_01_connect_disconnect.R")
+#source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
 
 majors <- c("USD", "EUR", "GBP", "CAD", "CHF")
 currencies <- c("AUD", "ARS", "BRL", "CLP", "DKK", "CNY", "RUB",

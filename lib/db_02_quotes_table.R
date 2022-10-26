@@ -31,8 +31,9 @@ getDistinctSymbolsinQuotes <- function(con) {
   return(tickers)
 }
 
-getDistinctDates <- function(con) {
-  try(dates <- dbGetQuery(con, "SELECT DISTINCT `date` FROM `quotes` ORDER BY `date`"))
+getDistinctDates <- function(con, adjust=TRUE) {
+  sup <- ifelse(adjust, "", "_UADJ")
+  try(dates <- dbGetQuery(con, sprintf("SELECT DISTINCT `date` FROM `quotes%s` ORDER BY `date`", sup)))
   return(dates)
 }
 
@@ -133,6 +134,19 @@ getActiveTickers <- function(con, date) {
 getTickersOnDate <- function(con, date) {
   activeTickers <- data.frame()
   sql <- sprintf("SELECT DISTINCT `ticker` FROM `quotes` WHERE `date` <= '%s'", date)
+  try(activeTickers <- dbGetQuery(con, sql))
+  if (nrow(activeTickers) > 0) {
+    return(activeTickers[,1]) # ticker names as vector
+  } else {
+    return(NULL)
+  }
+}
+
+# on a given date, what ticker has a history?
+getTickersOnDate1 <- function(con, date, adjust=TRUE) {
+  activeTickers <- data.frame()
+  sup <- ifelse(adjust, "", "_UADJ")
+  sql <- sprintf("SELECT DISTINCT `ticker` FROM `quotes%s` WHERE `date` <= '%s'", sup, date)
   try(activeTickers <- dbGetQuery(con, sql))
   if (nrow(activeTickers) > 0) {
     return(activeTickers[,1]) # ticker names as vector

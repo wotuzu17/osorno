@@ -12,6 +12,12 @@ createContextCalcTable <- function(con, version="") {
   try(dbClearResult(dbSendQuery(con, sql)))
 }
 
+getContextCalcTable <- function(con, version="") {
+  sql <- sprintf("SELECT * FROM `contextCalc%s`",
+                 version)
+  return(suppressWarnings(dbGetQuery(con, sql)))
+}
+
 dropContextCalcTable <- function(con, version="") {
   sql <- sprintf("DROP TABLE `contextCalc%s`", version)
   try(dbClearResult(dbSendQuery(con, sql)))

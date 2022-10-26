@@ -14,7 +14,9 @@ context <- list( # sprintf char, database type, db NULL, primary key
   "adjustments" = c("d", "int(11)", "NULL", FALSE),
   "zerodata" = c("d", "int(11)", "NULL", FALSE),
   "lpnr" = c("d", "int(11)", "NULL", FALSE),
-  "lnnr" = c("d", "int(11)", "NULL", FALSE)
+  "lnnr" = c("d", "int(11)", "NULL", FALSE),
+  "adjrows" = c("d", "int(11)", "NULL", FALSE),
+  "uadjrows" = c("d", "int(11)", "NULL", FALSE)
 )
 
 createContextTableLine <- function(con, ctx) {

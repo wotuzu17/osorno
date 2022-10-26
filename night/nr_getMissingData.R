@@ -1,14 +1,16 @@
 #!/usr/bin/Rscript --vanilla
 # script to get feed missing data into quotes table
 Sys.setenv(TZ="UTC")
-scriptname <- "nightlyRun_feedToDB.R" # for logging
+scriptname <- "nightlyRun_getMissingData.R" # for logging
 
 start.time <- Sys.time()
 cat (paste(start.time, scriptname, "started-------------------\n"))
 
 # global definitions
 source("/home/voellenk/.osornodb.R")   # secret key file
-source("/home/voellenk/osorno_workdir/osorno/lib/db_basic_functions.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_01_connect_disconnect.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_02_quotes_table.R")
+source("/home/voellenk/osorno_workdir/osorno/lib/db_03_volumesum_table.R")
 source("/home/voellenk/osorno_workdir/osorno/lib/raw_data_clean.R")
 downloadbasedir <- "/home/voellenk/osorno_workdir/download"
 

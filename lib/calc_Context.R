@@ -15,18 +15,20 @@ for(j in 1:length(this.tk)) {
   }
   usable <- TRUE # assume the symbol is usable, may be overridden later on
   ts <- getTickerDF1(coni, tk, adjust=TRUE, NULL, this.dt)
-  if(nrow(ts) > 0) {
+  adjrows <- nrow(ts)
+  if(adjrows > 0) {
     ts.xts <- xts(ts[,c("close", "volume")], order.by=as.Date(ts[,"date"])) 
   } else {
     usable <- FALSE
   }
   tsu <- getTickerDF1(coni, tk, adjust=FALSE, NULL, this.dt)
-  if (nrow(tsu) > 0) {
+  uadjrows <- nrow(tsu)
+  if (uadjrows > 0) {
     tsu.xts <- xts(tsu[,c("close", "volume")], order.by=as.Date(tsu[,"date"]))
   } else {
     usable <- FALSE
   }
-  if(abs(nrow(ts) - nrow(tsu)) > 2) {
+  if(abs(adjrows - uadjrows) > 2) {
     usable <- FALSE
   }
   if (usable) {
@@ -38,6 +40,8 @@ for(j in 1:length(this.tk)) {
     ts$ROC <- ROC(ts[,"close"])
     ts$zero <- ts$volume == 0 & (ts$ROC == 0 | is.na(ts$ROC))
     this$zerodata <- sum(ts$zero)
+    this$adjrows <- adjrows
+    this$uadjrows <- uadjrows
     if (sum(ts$zero) == nrow(ts)) { # only rows with no action
       this$usable <- 0
       this$firstdata <- "1900-01-01"
@@ -60,6 +64,6 @@ for(j in 1:length(this.tk)) {
     this$last <- "1900-01-01"
     this$lastdata <- "1900-01-01"
   }
-  replaceContextLine(cono, this)
+  #replaceContextLine(cono, this)
 }
 cat("\n")
